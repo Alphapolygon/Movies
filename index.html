@@ -3,35 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Similar Movies</title>
+    <title>Movie Recommendations</title>
     <style>
-        #resultsContainer {
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             display: flex;
-            flex-wrap: wrap; /* Allow items to wrap onto the next line */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
         }
-        
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .results {
+            display: flex;
+            flex-wrap: wrap; /* Allows items to wrap to the next line */
+            justify-content: space-around; /* Distributes extra space around items */
+        }
+
         .movieItem {
-            margin: 10px;
-            flex-basis: calc(25% - 20px); /* 4 items per row, accounting for margins */
-            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            width: calc(25% - 20px); /* Four movies per row with spacing */
+            margin-bottom: 20px;
         }
 
         .movieItem img {
-            width: 100%; /* Make images responsive within their container */
+            width: 100px;
             height: auto;
+            margin-right: 15px;
+        }
+
+        .movieItem h2 {
+            font-size: 18px;
+        }
+
+        /* Responsive Design for smaller screens */
+        @media (max-width: 992px) { /* For tablets and medium-sized screens */
+            .movieItem {
+                width: calc(33.333% - 20px); /* Three movies per row */
+            }
+        }
+
+        @media (max-width: 768px) { /* For smaller mobile devices */
+            .movieItem {
+                flex-direction: column;
+                align-items: start;
+                width: auto; /* Take full width for small screens */
+                margin-right: 20px; /* Adds spacing between movie items on one line */
+            }
+            
+            .movieItem img {
+                width: auto;
+                margin-bottom: 10px;
+            }
+
+            .results {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
 
-<h1>Find Similar Movies</h1>
-
-<div>
-    <input type="text" id="movieInput" placeholder="Enter movie name">
-    <button onclick="findSimilarMovies()">Search for Similarities</button>
+<div class="container">
+    <input type="text" id="movieInput" placeholder="Enter a movie name"/>
+    <button onclick="findSimilarMovies()">Find Similar Movies</button>
+    
+    <div id="resultsContainer" class="results"></div>
 </div>
 
-<div class="movie-container" id="resultsContainer"></div>
 
 <script src="app.js"></script>
 
