@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Finder</title>
+    <title>What To Watch Next</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,6 +38,7 @@
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 20px;
+            align-items: center;
         }
 
         #movieInput {
@@ -119,6 +120,14 @@
             color: #666;
         }
 
+        #typeSelector {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
         @media (max-width: 600px) {
             .movieItem {
                 flex-direction: column;
@@ -137,12 +146,16 @@
 </head>
 <body>
     <header>
-        <h1>Movie Finder</h1>
+        <h1>What To Watch Next</h1>
     </header>
 
     <div class="container">
-        <form id="searchForm" onsubmit="event.preventDefault(); findSimilarMovies();">
-            <input type="text" id="movieInput" placeholder="Enter a movie name...">
+        <form id="searchForm" onsubmit="event.preventDefault(); searchContent();">
+            <select id="typeSelector" onchange="updateSearchType()">
+                <option value="movie">Movies</option>
+                <option value="tv">TV Shows</option>
+            </select>
+            <input type="text" id="movieInput" placeholder="Enter a movie or TV show name...">
             <button id="searchButton" type="submit">Search</button>
         </form>
 
