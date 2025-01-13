@@ -137,18 +137,38 @@ function displayResults(movies) {
         const movieElement = document.createElement('div');
         movieElement.classList.add('movieItem');
 
-        const link = document.createElement('a');
-        link.href = `https://www.themoviedb.org/movie/${movie.id}`;
-        link.target = "_blank"; // Open movie details in a new tab
-
-        const imgContainer = document.createElement('div');
+        // Movie Poster (Clickable)
+        const imgLink = document.createElement('a');
+        imgLink.href = '#'; // Placeholder; search by movie functionality added later
+        imgLink.onclick = () => {
+            document.getElementById('movieInput').value = movie.title; // Set movie title in input
+            findSimilarMovies(); // Trigger search
+        };
 
         const img = new Image();
         img.src = `https://image.tmdb.org/t/p/w200${movie.poster_path}`;
         img.alt = movie.title;
-        imgContainer.appendChild(img);
+        img.style.cursor = 'pointer'; // Change cursor to indicate clickability
+        imgLink.appendChild(img);
 
-        // Display watch providers with region-level link
+        // Movie Details (Title, Release Date, Vote Average)
+        const detailsContainer = document.createElement('div');
+        detailsContainer.classList.add('movieDetails');
+
+        const title = document.createElement('h2');
+        title.textContent = movie.title;
+
+        const releaseDate = document.createElement('p');
+        releaseDate.textContent = `Release Date: ${movie.release_date}`;
+
+        const voteAverage = document.createElement('p');
+        voteAverage.innerHTML = `Rating: ${movie.vote_average.toFixed(1)} ⭐`;
+
+        detailsContainer.appendChild(title);
+        detailsContainer.appendChild(releaseDate);
+        detailsContainer.appendChild(voteAverage);
+
+        // Watch Providers
         const providersContainer = document.createElement('div');
         providersContainer.classList.add('providersContainer');
 
@@ -158,31 +178,25 @@ function displayResults(movies) {
             providerLink.target = "_blank"; // Open in a new tab
 
             const providerImg = new Image();
-            if (provider.logo_path) {
-                providerImg.src = `https://image.tmdb.org/t/p/original${provider.logo_path}`;
-                providerImg.alt = provider.provider_name;
-            } else {
-                providerImg.src = 'default-provider-logo.png'; // Fallback image
-                providerImg.alt = provider.provider_name;
-            }
+            providerImg.src = provider.logo_path
+                ? `https://image.tmdb.org/t/p/original${provider.logo_path}`
+                : 'default-provider-logo.png'; // Fallback image
+            providerImg.alt = provider.provider_name;
             providerImg.style.width = '50px';
 
             providerLink.appendChild(providerImg);
             providersContainer.appendChild(providerLink);
         });
 
-        imgContainer.appendChild(providersContainer);
+        // Append everything
+        movieElement.appendChild(imgLink); // Poster on the left
+        movieElement.appendChild(detailsContainer); // Details on the right
+        detailsContainer.appendChild(providersContainer); // Watch providers below
 
-        const title = document.createElement('h2');
-        title.textContent = `${movie.title} (${movie.vote_average.toFixed(1)})`;
-
-        link.appendChild(imgContainer);
-        link.appendChild(title);
-
-        movieElement.appendChild(link);
         container.appendChild(movieElement);
     });
 }
+
 
 
 
