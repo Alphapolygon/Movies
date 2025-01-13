@@ -20,8 +20,13 @@ async function findSimilarMovies() {
 		
 		const providerPromises = similarMovies.map(async (movie) => {
 			const providers = await getWatchProviders(movie.id);
-			const regionProviders = providers && providers['FI'] ? providers['FI'] : null; // Adjust region as needed
-			return { ...movie, watch: regionProviders };
+
+			// Extract US-specific data or adjust for another region
+			const regionData = providers && providers['FI'];
+			const watchLink = regionData ? regionData.link : null;
+			const flatrateProviders = regionData ? regionData.flatrate : null;
+
+			return { ...movie, watch: { link: watchLink, flatrate: flatrateProviders } };
 		});
 
         const moviesWithProviders = await Promise.all(providerPromises);
@@ -47,13 +52,13 @@ async function getWatchProviders(movieId) {
 	  }
 	};
 	
-    try {
+	try {
         const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/watch/providers`, options);
         const data = await response.json();
-        return data.results; // Contains region-specific watch provider information
+        return data.results; // Return region-specific results
     } catch (error) {
         console.error('Error fetching watch providers:', error);
-        return null; // Return null to indicate failure
+        return null; // Return null on failure
     }
 }
 
@@ -134,7 +139,7 @@ function displayResults(movies) {
 
         const link = document.createElement('a');
         link.href = `https://www.themoviedb.org/movie/${movie.id}`;
-        link.target = "_blank"; // Open in a new tab
+        link.target = "_blank"; // Open movie details in a new tab
 
         const imgContainer = document.createElement('div');
 
@@ -143,18 +148,23 @@ function displayResults(movies) {
         img.alt = movie.title;
         imgContainer.appendChild(img);
 
+        // Display watch providers with region-level link
         const providersContainer = document.createElement('div');
+        providersContainer.classList.add('providersContainer');
 
         movie.watch.flatrate.forEach(provider => {
             const providerLink = document.createElement('a');
-            providerLink.href = provider.link || '#';
-            providerLink.target = "_blank";
+            providerLink.href = movie.watch.link || '#'; // Use region-level link
+            providerLink.target = "_blank"; // Open in a new tab
 
             const providerImg = new Image();
-            providerImg.src = provider.logo_path
-                ? `https://image.tmdb.org/t/p/original${provider.logo_path}`
-                : 'default-provider-logo.png'; // Replace with your fallback
-            providerImg.alt = provider.provider_name;
+            if (provider.logo_path) {
+                providerImg.src = `https://image.tmdb.org/t/p/original${provider.logo_path}`;
+                providerImg.alt = provider.provider_name;
+            } else {
+                providerImg.src = 'default-provider-logo.png'; // Fallback image
+                providerImg.alt = provider.provider_name;
+            }
             providerImg.style.width = '50px';
 
             providerLink.appendChild(providerImg);
@@ -162,16 +172,17 @@ function displayResults(movies) {
         });
 
         imgContainer.appendChild(providersContainer);
-        link.appendChild(imgContainer);
 
         const title = document.createElement('h2');
         title.textContent = `${movie.title} (${movie.vote_average.toFixed(1)})`;
 
+        link.appendChild(imgContainer);
         link.appendChild(title);
-        movieElement.appendChild(link);
 
+        movieElement.appendChild(link);
         container.appendChild(movieElement);
     });
 }
+
 
 
