@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Similar Movies</title>
+    <style>
+        #resultsContainer {
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap onto the next line */
+        }
+        
+        .movieItem {
+            margin: 10px;
+            flex-basis: calc(25% - 20px); /* 4 items per row, accounting for margins */
+            box-sizing: border-box;
+        }
+
+        .movieItem img {
+            width: 100%; /* Make images responsive within their container */
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Find Similar Movies</h1>
+
+<div>
+    <input type="text" id="movieInput" placeholder="Enter movie name">
+    <button onclick="findSimilarMovies()">Search for Similarities</button>
+</div>
+
+<div class="movie-container" id="resultsContainer"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
