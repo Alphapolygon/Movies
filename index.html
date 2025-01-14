@@ -93,6 +93,62 @@
             flex-direction: column;
             gap: 20px;
         }
+		
+        #suggestions {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: absolute;
+            width: calc(100% - 122px); /* Match input width */
+            background-color: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
+            top: 100%; /* Position below the input */
+            left: 72px; /* Align with the input start */
+        }
+        @media (prefers-color-scheme: dark) {
+            #suggestions {
+                background-color: #333;
+                border-color: #555;
+            }
+            #suggestions li:hover {
+                background-color: #444;
+            }
+        }
+        #suggestions li {
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+
+        #suggestions li:hover {
+            background-color: #f0f0f0;
+        }
+        #searchForm {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            position: relative; /* For absolute positioning of suggestions */
+        }
+        .container {
+            /* ... other styles */
+            position: relative; /* Make container relative for absolute positioning */
+        }
+		
+		@media (prefers-color-scheme: dark) {
+			#suggestions {
+				background-color: #333;
+				border-color: #555;
+			}
+			#suggestions li:hover {
+				background-color: #444;
+			}
+		}
 
         .movieItem {
             display: flex;
@@ -174,13 +230,14 @@
     </header>
 
     <div class="container">
+	
         <form id="searchForm" onsubmit="event.preventDefault(); searchContent();">
             <select id="typeSelector" onchange="updateSearchType()">
                 <option value="movie">Movies</option>
                 <option value="tv">TV Shows</option>
             </select>
-            <input type="text" id="movieInput" placeholder="Enter a movie or TV show name...">
-            <button id="searchButton" type="submit">Search</button>
+            <input type="text" id="movieInput" placeholder="Enter a movie or TV show name..." autocomplete="off">
+            <ul id="suggestions"></ul> <button id="searchButton" type="submit">Search</button>
         </form>
 		<div id="loader" style="display: none;">SEARCHING...</div>
         <div id="resultsContainer"></div>

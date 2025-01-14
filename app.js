@@ -1,6 +1,75 @@
 
 let currentSearchType = 'movie'; // Default search type
 let userRegion = 'US'; // Default region fallback
+
+
+const movieInput = document.getElementById('movieInput');
+const suggestionsList = document.getElementById('suggestions');
+const searchForm = document.getElementById('searchForm'); // Get the form element
+let timeoutId;
+
+movieInput.addEventListener('input', () => {
+    clearTimeout(timeoutId); // Clear previous timeout
+
+    timeoutId = setTimeout(async () => { // Debounce input
+        const query = movieInput.value.trim();
+
+        if (query.length < 3) { // Only search if query is at least 3 characters
+            suggestionsList.innerHTML = ''; // Clear suggestions
+            return;
+        }
+
+        try {
+            const suggestions = await getMovieSuggestions(query); // Fetch suggestions
+
+            suggestionsList.innerHTML = ''; // Clear previous suggestions
+
+            if (suggestions && suggestions.length > 0) {
+                suggestions.forEach(suggestion => {
+                    const li = document.createElement('li');
+                    li.textContent = suggestion.title || suggestion.name;
+                    li.addEventListener('click', () => {
+                        movieInput.value = suggestion.title || suggestion.name;
+                        suggestionsList.innerHTML = ''; // Clear suggestions after selection
+                    });
+                    suggestionsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                    li.textContent = "No result found";
+                    suggestionsList.appendChild(li);
+            }
+        } catch (error) {
+            console.error('Error fetching suggestions:', error);
+        }
+    }, 300); // Wait 300ms after user stops typing
+});
+
+// Add event listener to the form's submit event
+searchForm.addEventListener('submit', () => {
+    suggestionsList.innerHTML = ''; // Clear suggestions when search is submitted
+});
+
+// Add event listener to the document to close the suggestions if clicked outside the input and suggestions
+document.addEventListener('click', (event) => {
+    if (!movieInput.contains(event.target) && !suggestionsList.contains(event.target)) {
+        suggestionsList.innerHTML = '';
+    }
+});
+
+async function getMovieSuggestions(query) {
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=3bbf380371a2169bd25b710058646650&query=${encodeURIComponent(query)}`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.results;
+    } catch (error) {
+        console.error("error fetching suggestions", error)
+    }
+}
+
+
+
 document.addEventListener("DOMContentLoaded", async () => {
     await fetchAndDisplayPopularMovies();
 });
@@ -349,12 +418,12 @@ function displayResults(movies, isMovie) {
     });
 }
 
-function displayPopular(items) {
+async function displayPopular(items) {
     const container = document.getElementById("resultsContainer");
     container.innerHTML = ""; // Clear previous results
 
-    items.forEach(item => {
-        const { id, title, name, poster_path, release_date, first_air_date, vote_average, genre_ids } = item;
+    for (const item of items) { // Use a for...of loop for async/await
+        const { id, title, name, poster_path, release_date, first_air_date, vote_average } = item;
         const type = title ? "movie" : "tv";
         const displayTitle = title || name;
         const displayDate = release_date || first_air_date;
@@ -366,7 +435,6 @@ function displayPopular(items) {
         imgContainer.href = "#";
         imgContainer.addEventListener("click", async () => {
             document.getElementById("movieInput").value = displayTitle;
-            
             await searchContent();
         });
 
@@ -390,14 +458,34 @@ function displayPopular(items) {
         details.appendChild(titleElement);
         details.appendChild(dateElement);
         details.appendChild(voteElement);
-        
 
         movieElement.appendChild(imgContainer);
         movieElement.appendChild(details);
+
+        // Fetch and display providers
+        try {
+            const providers = type === 'movie' ? await getWatchProviders(id) : await getTVWatchProviders(id);
+            if (providers && providers[userRegion] && providers[userRegion].flatrate) {
+                const providersContainer = document.createElement("div");
+                providersContainer.classList.add("providersContainer");
+
+                providers[userRegion].flatrate.forEach(provider => {
+                    const providerLink = document.createElement("a");
+                    const providerImg = new Image();
+                    providerImg.src = provider.logo_path
+                        ? `https://image.tmdb.org/t/p/original${provider.logo_path}`
+                        : 'default-provider-logo.png';
+                    providerImg.alt = provider.provider_name;
+                    providerImg.style.width = '50px';
+                    providerLink.appendChild(providerImg);
+                    providersContainer.appendChild(providerLink);
+                });
+                details.appendChild(providersContainer); // Append providers to details
+            }
+        } catch (error) {
+            console.error("Error fetching providers for popular item:", error);
+        }
+
         container.appendChild(movieElement);
-    });
+    }
 }
-
-
-
-
