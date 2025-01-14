@@ -127,12 +127,53 @@
         #suggestions li:hover {
             background-color: #f0f0f0;
         }
+		
+		.search-type-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px; /* Space between buttons and input */
+            justify-content: center;
+        }
+
+        .search-type-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px; /* Rounded buttons */
+            background-color: #eee;
+            color: #333;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .search-type-button.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .search-type-button:hover {
+            background-color: #ddd;
+        }
+        @media (prefers-color-scheme: dark) {
+            .search-type-button {
+                background-color: #333;
+                color: #e0e0e0;
+            }
+            .search-type-button.active {
+                background-color: #64b5f6;
+                color: #121212;
+            }
+            .search-type-button:hover {
+                background-color: #444;
+            }
+        }
+		
         #searchForm {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 20px;
             align-items: center;
+			justify-content: center;
             position: relative; /* For absolute positioning of suggestions */
         }
         .container {
@@ -199,6 +240,20 @@
             font-size: 14px;
             color: #666;
         }
+		/* ... other styles */
+		.separator-row {
+			width: 100%;
+			text-align: center; /* Center the text */
+			margin: 20px 0; /* Add some top and bottom margin */
+			font-style: italic; /* Make the text italic */
+			color: #777; /* A slightly lighter color */
+			font-size: 1.2em;
+		}
+		@media (prefers-color-scheme: dark) {
+			.separator-row {
+				color: #999;
+			}
+		}
 
         #typeSelector {
             padding: 10px;
@@ -230,16 +285,17 @@
     </header>
 
     <div class="container">
-	
+        <div class="search-type-buttons">
+            <button class="search-type-button active" data-type="movie">Movies</button>
+            <button class="search-type-button" data-type="tv">TV Shows</button>
+            <button class="search-type-button" data-type="actor">Actors</button>
+        </div>
         <form id="searchForm" onsubmit="event.preventDefault(); searchContent();">
-            <select id="typeSelector" onchange="updateSearchType()">
-                <option value="movie">Movies</option>
-                <option value="tv">TV Shows</option>
-            </select>
             <input type="text" id="movieInput" placeholder="Enter a movie or TV show name..." autocomplete="off">
-            <ul id="suggestions"></ul> <button id="searchButton" type="submit">Search</button>
+            <ul id="suggestions"></ul>
+            <button id="searchButton" type="submit">Search</button>
         </form>
-		<div id="loader" style="display: none;">SEARCHING...</div>
+        <div id="loader" style="display: none;">SEARCHING...</div>
         <div id="resultsContainer"></div>
     </div>
 

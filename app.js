@@ -103,10 +103,21 @@ async function detectUserRegion() {
     }
 }
 
-function updateSearchType() {
-    const typeSelector = document.getElementById('typeSelector');
-    currentSearchType = typeSelector.value;
+// Replace updateSearchType function
+function setupTypeButtons() {
+    const buttons = document.querySelectorAll('.search-type-button');
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            buttons.forEach(btn => btn.classList.remove('active')); // Remove active class from all buttons
+            button.classList.add('active'); // Add active class to the clicked button
+            currentSearchType = button.dataset.type; // Update currentSearchType
+        });
+    });
 }
+document.addEventListener("DOMContentLoaded", async () => {
+    await fetchAndDisplayPopularMovies();
+    setupTypeButtons(); // Call the function to set up the buttons
+});
 
 async function searchContent() {
 	await detectUserRegion();
@@ -136,11 +147,9 @@ async function searchContent() {
 			});
 
 			const moviesWithProviders = await Promise.all(providerPromises);
-
-        // Sort the movies by vote_average in descending order
-			moviesWithProviders.sort((a, b) => b.vote_average - a.vote_average);
-			
+			moviesWithProviders.sort((a, b) => b.vote_average - a.vote_average);			
             displayResults(moviesWithProviders, true);  // Display as movies
+			
         } else if (currentSearchType === 'tv') {
             id = await getTvShowId(movieName);
             const similarItems = await getSimilarShows(id);
@@ -156,11 +165,15 @@ async function searchContent() {
 			});
 
 			const moviesWithProviders = await Promise.all(providerPromises);
-
-        // Sort the movies by vote_average in descending order
 			moviesWithProviders.sort((a, b) => b.vote_average - a.vote_average);
-			
             displayResults(moviesWithProviders, false); // Display as TV shows
+        }else if (currentSearchType === 'actor') { // New: Actor search
+            id = await searchActors(movieName);
+            if (id && id.length > 0) {
+              displayActorResults(id);
+            } else {
+              alert("No actors found.");
+            }
         }
 
         if (!id) {
@@ -186,24 +199,38 @@ function hideLoader() {
     loader.style.display = 'none';
 }
 
+async function searchActors(actorName) {
+    const url = `https://api.themoviedb.org/3/search/person?api_key=3bbf380371a2169bd25b710058646650&query=${encodeURIComponent(actorName)}`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.results;
+    } catch (error) {
+        console.error("Error searching actors:", error);
+        return null;
+    }
+}
+
 
 async function fetchAndDisplayPopularMovies() {
 	
 	
     const url = `https://api.themoviedb.org/3/discover/movie?api_key=3bbf380371a2169bd25b710058646650&language=en-US&sort_by=popularity.desc&page=1`;
 
-	showLoader(); // Show loader while searching
+    showLoader();
     try {
         const response = await fetch(url);
         const data = await response.json();
-        displayPopular(data.results);
+
+        // Get Providers for popular movies
+        const popularMoviesWithProviders = await getMoviesWithProviders(data.results, true);
+        displayPopular(popularMoviesWithProviders);
     } catch (error) {
         console.error("Error fetching popular movies:", error);
     } finally {
-        hideLoader(); // Hide loader after search completes
+        hideLoader();
     }
 }
-
 
 async function getTVWatchProviders(movieId) {
 
@@ -333,159 +360,229 @@ async function getSimilarMovies(movieId) {
     }
 }
 
-function displayResults(movies, isMovie) {
+async function getMovieData(movieId) {
+    const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=3bbf380371a2169bd25b710058646650`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error fetching movie data:", error);
+        return null;
+    }
+}
+
+async function getTVShowData(tvShowId) {
+    const url = `https://api.themoviedb.org/3/tv/${tvShowId}?api_key=3bbf380371a2169bd25b710058646650`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error fetching tv show data:", error);
+        return null;
+    }
+}
+
+async function getMoviesWithProviders(similarItems, isMovie = true) {
+    const providerPromises = similarItems.map(async (item) => {
+        const providers = isMovie ? await getWatchProviders(item.id) : await getTVWatchProviders(item.id);
+
+        const regionData = providers && providers[userRegion];
+        const watchLink = regionData ? regionData.link : null;
+        const flatrateProviders = regionData ? regionData.flatrate : null;
+
+        return { ...item, watch: { link: watchLink, flatrate: flatrateProviders } };
+    });
+
+    return await Promise.all(providerPromises);
+}
+
+async function displayResults(similarItems, isMovie) {
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '';
+
+    const searchTerm = document.getElementById('movieInput').value.trim();
+
+    try {
+        let id;
+        if (isMovie) {
+            id = await getMovieId(searchTerm);
+        } else {
+            id = await getTvShowId(searchTerm);
+        }
+
+        if (id) {
+            let searchedItem;
+            if (isMovie) {
+                searchedItem = await getMovieData(id);
+            } else {
+                searchedItem = await getTVShowData(id);
+            }
+
+            if (searchedItem) {
+                const providers = isMovie ? await getWatchProviders(id) : await getTVWatchProviders(id);
+                const regionData = providers && providers[userRegion];
+                const watchLink = regionData ? regionData.link : null;
+                const flatrateProviders = regionData ? regionData.flatrate : null;
+                searchedItem.watch = { link: watchLink, flatrate: flatrateProviders };
+
+                displayItem(searchedItem, isMovie, container);
+
+                const separatorRow = document.createElement('div');
+                separatorRow.classList.add('separator-row');
+                separatorRow.textContent = `People who watched ${searchedItem.title || searchedItem.name} also watched:`; // Dynamic text
+                container.appendChild(separatorRow);
+            }
+
+            const moviesWithProviders = await getMoviesWithProviders(similarItems, isMovie);
+            moviesWithProviders.forEach(item => {
+                displayItem(item, isMovie, container);
+            });
+        } else {
+            alert("Item not found. Please check the spelling and try again.");
+        }
+    } catch (error) {
+        console.error("Error displaying results:", error);
+        alert("An error occurred. Please try again.");
+    }
+}
+
+
+function displayPopular(movies) {
     const container = document.getElementById('resultsContainer');
     container.innerHTML = ''; // Clear previous results
 
     movies.forEach(movie => {
-        if (!movie.watch || !movie.watch.flatrate) return; // Skip if no provider info
-
-        const movieElement = document.createElement('div');
-        movieElement.classList.add('movieItem');
-
-        // Movie Poster (Clickable)
-        const imgLink = document.createElement('a');
-        imgLink.href = '#'; // Placeholder; search by movie functionality added later
-		 if (isMovie) {
-            imgLink.onclick = () => {
-				document.getElementById('movieInput').value = movie.title; // Set movie title in input
-				searchContent(); // Trigger search
-			};
-        } else {
-            imgLink.onclick = () => {
-				document.getElementById('movieInput').value = movie.name; // Set movie title in input
-				searchContent(); // Trigger search
-			};
-        }
-
-
-        const img = new Image();
-        img.src = `https://image.tmdb.org/t/p/w200${movie.poster_path}`;
-        img.alt = movie.title;
-        img.style.cursor = 'pointer'; // Change cursor to indicate clickability
-        imgLink.appendChild(img);
-
-        // Movie Details (Title, Release Date, Vote Average)
-        const detailsContainer = document.createElement('div');
-        detailsContainer.classList.add('movieDetails');
-
-        const title = document.createElement('h2');
-        title.textContent = movie.title;
-
-        const releaseDate = document.createElement('p');
-		 if (isMovie) {
-            releaseDate.textContent = `Release Date: ${movie.release_date}`;
-        } else {
-			releaseDate.textContent = `First Air Date: ${movie.first_air_date}`;
-            
-        }
-		
-        
-
-        const voteAverage = document.createElement('p');
-        voteAverage.innerHTML = `Rating: ${movie.vote_average.toFixed(1)} ⭐`;
-
-        detailsContainer.appendChild(title);
-        detailsContainer.appendChild(releaseDate);
-        detailsContainer.appendChild(voteAverage);
-
-        // Watch Providers
-        const providersContainer = document.createElement('div');
-        providersContainer.classList.add('providersContainer');
-
-        movie.watch.flatrate.forEach(provider => {
-            const providerLink = document.createElement('a');
-           // providerLink.href = movie.watch.link || '#'; // Use region-level link
-           // providerLink.target = "_blank"; // Open in a new tab
-
-            const providerImg = new Image();
-            providerImg.src = provider.logo_path
-                ? `https://image.tmdb.org/t/p/original${provider.logo_path}`
-                : 'default-provider-logo.png'; // Fallback image
-            providerImg.alt = provider.provider_name;
-            providerImg.style.width = '50px';
-
-            providerLink.appendChild(providerImg);
-            providersContainer.appendChild(providerLink);
-        });
-
-        // Append everything
-        movieElement.appendChild(imgLink); // Poster on the left
-        movieElement.appendChild(detailsContainer); // Details on the right
-        detailsContainer.appendChild(providersContainer); // Watch providers below
-
-        container.appendChild(movieElement);
+        displayItem(movie, true, container, false); // Pass true to skipProviderCheck
     });
 }
 
-async function displayPopular(items) {
-    const container = document.getElementById("resultsContainer");
-    container.innerHTML = ""; // Clear previous results
+async function displayActorResults(actors) {
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '';
 
-    for (const item of items) { // Use a for...of loop for async/await
-        const { id, title, name, poster_path, release_date, first_air_date, vote_average } = item;
-        const type = title ? "movie" : "tv";
-        const displayTitle = title || name;
-        const displayDate = release_date || first_air_date;
+    for (const actor of actors) {
+        const actorDiv = document.createElement('div');
+        actorDiv.classList.add('movieItem');
 
-        const movieElement = document.createElement("div");
-        movieElement.classList.add("movieItem");
+        const img = document.createElement('img');
+        img.src = actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : 'placeholder.jpg';
+        img.alt = actor.name;
+        actorDiv.appendChild(img);
 
-        const imgContainer = document.createElement("a");
-        imgContainer.href = "#";
-        imgContainer.addEventListener("click", async () => {
-            document.getElementById("movieInput").value = displayTitle;
-            await searchContent();
-        });
+        const detailsDiv = document.createElement('div');
+        detailsDiv.classList.add('movieDetails');
 
-        const img = new Image();
-        img.src = poster_path ? `https://image.tmdb.org/t/p/w200${poster_path}` : "placeholder.jpg";
-        img.alt = displayTitle;
-        imgContainer.appendChild(img);
+        const nameHeading = document.createElement('h2');
+        nameHeading.textContent = actor.name;
+        detailsDiv.appendChild(nameHeading);
 
-        const details = document.createElement("div");
-        details.classList.add("movieDetails");
+        if (actor.known_for && actor.known_for.length > 0) {
+            const knownForContainer = document.createElement('div'); // Container for known_for items
+            knownForContainer.classList.add('providersContainer'); // Use the same styling
 
-        const titleElement = document.createElement("h2");
-        titleElement.textContent = displayTitle;
+            for (const movie of actor.known_for) {
+                if (movie.media_type === "movie" || movie.media_type === "tv") { // only shows movies and tv shows
+                    const movieLink = document.createElement('a');
+                    movieLink.href = "#";
+					movieLink.addEventListener("click", async () => {
+                        document.getElementById("movieInput").value = movie.title || movie.name;
 
-        const dateElement = document.createElement("p");
-        dateElement.textContent = `Release Date: ${displayDate || "Unknown"}`;
+                        // Update active button and currentSearchType (same as in displayItem)
+                        const buttons = document.querySelectorAll('.search-type-button');
+                        buttons.forEach(btn => btn.classList.remove('active'));
+                        const targetButton = document.querySelector(`.search-type-button[data-type="${movie.media_type}"]`);
+                        if (targetButton) {
+                            targetButton.classList.add('active');
+                            currentSearchType = movie.media_type;
+                        }
 
-        const voteElement = document.createElement("p");
-        voteElement.textContent = `Rating: ${vote_average ? vote_average.toFixed(1) : "N/A"} ★`;
-
-        details.appendChild(titleElement);
-        details.appendChild(dateElement);
-        details.appendChild(voteElement);
-
-        movieElement.appendChild(imgContainer);
-        movieElement.appendChild(details);
-
-        // Fetch and display providers
-        try {
-            const providers = type === 'movie' ? await getWatchProviders(id) : await getTVWatchProviders(id);
-            if (providers && providers[userRegion] && providers[userRegion].flatrate) {
-                const providersContainer = document.createElement("div");
-                providersContainer.classList.add("providersContainer");
-
-                providers[userRegion].flatrate.forEach(provider => {
-                    const providerLink = document.createElement("a");
-                    const providerImg = new Image();
-                    providerImg.src = provider.logo_path
-                        ? `https://image.tmdb.org/t/p/original${provider.logo_path}`
+                        await searchContent();
+                    });
+                    const movieImg = document.createElement('img');
+                    movieImg.src = movie.poster_path
+                        ? `https://image.tmdb.org/t/p/w92${movie.poster_path}`
                         : 'default-provider-logo.png';
-                    providerImg.alt = provider.provider_name;
-                    providerImg.style.width = '50px';
-                    providerLink.appendChild(providerImg);
-                    providersContainer.appendChild(providerLink);
-                });
-                details.appendChild(providersContainer); // Append providers to details
+                    movieImg.alt = movie.title || movie.name;
+                    movieImg.style.width = '100px';
+                    movieLink.appendChild(movieImg);
+                    knownForContainer.appendChild(movieLink);
+                }
             }
-        } catch (error) {
-            console.error("Error fetching providers for popular item:", error);
+            detailsDiv.appendChild(knownForContainer);
         }
 
-        container.appendChild(movieElement);
+        actorDiv.appendChild(detailsDiv);
+        container.appendChild(actorDiv);
     }
+}
+
+async function displayItem(movie, isMovie, container, skipProviderCheck = false) {
+    if (!skipProviderCheck && (!movie.watch || !movie.watch.flatrate)) return;
+
+    const movieElement = document.createElement('div');
+    movieElement.classList.add('movieItem');
+
+	const imgLink = document.createElement('a');
+    imgLink.href = '#';
+    imgLink.addEventListener('click', async () => {
+        document.getElementById('movieInput').value = movie.title || movie.name;
+
+        // Update active button and currentSearchType
+        const buttons = document.querySelectorAll('.search-type-button');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        const targetButton = document.querySelector(`.search-type-button[data-type="${isMovie ? 'movie' : 'tv'}"]`);
+        if (targetButton) {
+            targetButton.classList.add('active');
+            currentSearchType = isMovie ? 'movie' : 'tv';
+        }
+
+        await searchContent();
+    });
+
+    const img = new Image();
+    img.src = `https://image.tmdb.org/t/p/w200${movie.poster_path}`;
+    img.alt = isMovie ? movie.title : movie.name;
+    img.style.cursor = 'pointer';
+    imgLink.appendChild(img);
+
+    const detailsContainer = document.createElement('div');
+    detailsContainer.classList.add('movieDetails');
+
+    const title = document.createElement('h2');
+    title.textContent = isMovie ? movie.title : movie.name;
+
+    const releaseDate = document.createElement('p');
+    releaseDate.textContent = `Release Date: ${isMovie ? movie.release_date : movie.first_air_date}`;
+
+    const voteAverage = document.createElement('p');
+    voteAverage.innerHTML = `Rating: ${movie.vote_average.toFixed(1)} ⭐`;
+
+    detailsContainer.appendChild(title);
+    detailsContainer.appendChild(releaseDate);
+    detailsContainer.appendChild(voteAverage);
+
+    const providersContainer = document.createElement('div');
+    providersContainer.classList.add('providersContainer');
+	if (!skipProviderCheck){
+		movie.watch.flatrate.forEach(provider => {
+			const providerLink = document.createElement('a');
+			const providerImg = new Image();
+			providerImg.src = provider.logo_path
+				? `https://image.tmdb.org/t/p/original${provider.logo_path}`
+				: 'default-provider-logo.png';
+			providerImg.alt = provider.provider_name;
+			providerImg.style.width = '50px';
+
+			providerLink.appendChild(providerImg);
+			providersContainer.appendChild(providerLink);
+		});
+	}
+
+    movieElement.appendChild(imgLink);
+    movieElement.appendChild(detailsContainer);
+    detailsContainer.appendChild(providersContainer);
+
+    container.appendChild(movieElement);
 }
