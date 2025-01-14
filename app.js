@@ -362,12 +362,13 @@ async function getSimilarMovies(movieId) {
     }
 }
 
+// Modify getMovieData and getTVShowData to include genre information
 async function getMovieData(movieId) {
     const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=3bbf380371a2169bd25b710058646650`;
     try {
         const response = await fetch(url);
         const data = await response.json();
-        return data;
+        return data; // Now includes genres
     } catch (error) {
         console.error("Error fetching movie data:", error);
         return null;
@@ -379,7 +380,7 @@ async function getTVShowData(tvShowId) {
     try {
         const response = await fetch(url);
         const data = await response.json();
-        return data;
+        return data; // Now includes genres
     } catch (error) {
         console.error("Error fetching tv show data:", error);
         return null;
@@ -398,66 +399,6 @@ async function getMoviesWithProviders(similarItems, isMovie = true) {
     });
 
     return await Promise.all(providerPromises);
-}
-
-async function displayResults(similarItems, isMovie) {
-    const container = document.getElementById('resultsContainer');
-    container.innerHTML = '';
-
-    const searchTerm = document.getElementById('movieInput').value.trim();
-
-    try {
-        let id;
-        if (isMovie) {
-            id = await getMovieId(searchTerm);
-        } else {
-            id = await getTvShowId(searchTerm);
-        }
-
-        if (id) {
-            let searchedItem;
-            if (isMovie) {
-                searchedItem = await getMovieData(id);
-            } else {
-                searchedItem = await getTVShowData(id);
-            }
-
-            if (searchedItem) {
-                const providers = isMovie ? await getWatchProviders(id) : await getTVWatchProviders(id);
-                const regionData = providers && providers[userRegion];
-                const watchLink = regionData ? regionData.link : null;
-                const flatrateProviders = regionData ? regionData.flatrate : null;
-                searchedItem.watch = { link: watchLink, flatrate: flatrateProviders };
-
-                displayItem(searchedItem, isMovie, container);
-
-                const separatorRow = document.createElement('div');
-                separatorRow.classList.add('separator-row');
-                separatorRow.textContent = `People who watched ${searchedItem.title || searchedItem.name} also watched:`; // Dynamic text
-                container.appendChild(separatorRow);
-            }
-
-            const moviesWithProviders = await getMoviesWithProviders(similarItems, isMovie);
-            moviesWithProviders.forEach(item => {
-                displayItem(item, isMovie, container);
-            });
-        } else {
-            alert("Item not found. Please check the spelling and try again.");
-        }
-    } catch (error) {
-        console.error("Error displaying results:", error);
-        alert("An error occurred. Please try again.");
-    }
-}
-
-
-function displayPopular(movies) {
-    const container = document.getElementById('resultsContainer');
-    container.innerHTML = ''; // Clear previous results
-
-    movies.forEach(movie => {
-        displayItem(movie, true, container, true); // Pass true to skipProviderCheck
-    });
 }
 
 async function displayActorResults(actors) {
@@ -520,14 +461,84 @@ async function displayActorResults(actors) {
     }
 }
 
-async function displayItem(movie, isMovie, container) {
-    if (!movie.watch || !movie.watch.flatrate) {
-        if (movie.isPopular) {
-        } else {
-            return;
-        }
-    }
 
+
+function displayPopular(movies) {
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = ''; // Clear previous results
+
+    movies.forEach(movie => {
+        displayItem(movie, true, container, true); // Pass true to skipProviderCheck
+    });
+}
+
+async function displayResults(similarItems, isMovie) {
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '';
+
+    const searchTerm = document.getElementById('movieInput').value.trim();
+
+    try {
+        let id;
+        if (isMovie) {
+            id = await getMovieId(searchTerm);
+        } else {
+            id = await getTvShowId(searchTerm);
+        }
+
+        if (id) {
+            let searchedItem;
+            if (isMovie) {
+                searchedItem = await getMovieData(id);
+            } else {
+                searchedItem = await getTVShowData(id);
+            }
+
+            if (searchedItem) {
+                const providers = isMovie ? await getWatchProviders(id) : await getTVWatchProviders(id);
+                const regionData = providers && providers[userRegion];
+                const watchLink = regionData ? regionData.link : null;
+                const flatrateProviders = regionData ? regionData.flatrate : null;
+                searchedItem.watch = { link: watchLink, flatrate: flatrateProviders };
+
+                displayItem(searchedItem, isMovie, container, true); // Display the main item FIRST
+				
+
+
+                // Fetch providers for similar items and DISPLAY ALL
+                const similarItemsWithProviders = await Promise.all(similarItems.map(async (item) => {
+                    try {
+                        const providers = isMovie ? await getWatchProviders(item.id) : await getTVWatchProviders(item.id);
+                        const regionData = providers && providers[userRegion];
+                        const watchLink = regionData ? regionData.link : null;
+                        const flatrateProviders = regionData ? regionData.flatrate : null;
+                        return { ...item, watch: { link: watchLink, flatrate: flatrateProviders } };
+                    } catch (error) {
+                        console.error("Error fetching providers for similar item:", error);
+                        return { ...item, watch: null };
+                    }
+                }));
+                const separatorRow = document.createElement('div');
+                separatorRow.classList.add('separator-row');
+                separatorRow.textContent = `People who watched ${searchedItem.title || searchedItem.name} also watched:`;
+                container.appendChild(separatorRow);
+                similarItemsWithProviders.forEach(item => {
+                    displayItem(item, isMovie, container, false); // Similar items
+                });
+            } else {
+                alert("Item not found. Please check the spelling and try again.");
+            }
+        }
+    } catch (error) {
+        console.error("Error displaying results:", error);
+        alert("An error occurred. Please try again.");
+    }
+}
+
+async function displayItem(movie, isMovie, container, isMainItem) {
+    if (!isMainItem && (!movie.watch || !movie.watch.flatrate)) {
+        return; // Don't display if no providers for similar items
+    }
     const movieElement = document.createElement('div');
     movieElement.classList.add('movieItem');
 
