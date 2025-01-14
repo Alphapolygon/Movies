@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What To Watch Next</title>
-    <style>
+    <style>	
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f5;
@@ -49,6 +49,15 @@
             border-radius: 4px;
             min-width: 0;
         }
+		
+		#loader {
+		display: none; /* Hidden by default */
+		text-align: center;
+		font-size: 18px;
+		color: #007bff;
+		font-weight: bold;
+		margin-bottom: 20px;
+		}
 
         #searchButton {
             padding: 10px 20px;
@@ -158,7 +167,7 @@
             <input type="text" id="movieInput" placeholder="Enter a movie or TV show name...">
             <button id="searchButton" type="submit">Search</button>
         </form>
-
+		<div id="loader" style="display: none;">SEARCHING...</div>
         <div id="resultsContainer"></div>
     </div>
 

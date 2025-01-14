@@ -1,4 +1,8 @@
+
 let currentSearchType = 'movie'; // Default search type
+document.addEventListener("DOMContentLoaded", async () => {
+    await fetchAndDisplayPopularMovies();
+});
 
 function updateSearchType() {
     const typeSelector = document.getElementById('typeSelector');
@@ -15,7 +19,7 @@ async function searchContent() {
 
     try {
         let id; // Variable to hold the ID (movieId or tvShowId)
-        
+         showLoader(); // Show loader while searching
         if (currentSearchType === 'movie') {
             id = await getMovieId(movieName);
             const similarItems = await getSimilarMovies(id);
@@ -64,21 +68,45 @@ async function searchContent() {
     } catch (error) {
         console.error('Error:', error);
         alert("An error occurred. Please try again.");
+     } finally {
+        hideLoader(); // Hide loader after search completes
+    }
+}
+
+// Show the loader
+function showLoader() {
+    const loader = document.getElementById('loader');
+    loader.style.display = 'block';
+}
+
+// Hide the loader
+function hideLoader() {
+    const loader = document.getElementById('loader');
+    loader.style.display = 'none';
+}
+
+
+async function fetchAndDisplayPopularMovies() {
+    const url = `https://api.themoviedb.org/3/discover/movie?language=en-US&sort_by=popularity.desc&page=1`;
+
+	showLoader(); // Show loader while searching
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        displayPopular(data.results);
+    } catch (error) {
+        console.error("Error fetching popular movies:", error);
+    } finally {
+        hideLoader(); // Hide loader after search completes
     }
 }
 
 
 async function getTVWatchProviders(movieId) {
-	const options = {
-	  method: 'GET',
-	  headers: {
-		accept: 'application/json',
-		Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYmJmMzgwMzcxYTIxNjliZDI1YjcxMDA1ODY0NjY1MCIsIm5iZiI6MTczNjc3MjgxOC40NCwic3ViIjoiNjc4NTBjZDI5MGY0MmMzMjgzN2I2OTI5Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.5FAHYiJQCOUmzlPZdWYsxKQaX7vRpAZE81zgqMX9VmI'
-	  }
-	};
+
 	
 	try {
-        const response = await fetch(`https://api.themoviedb.org/3/tv/${movieId}/watch/providers`, options);
+        const response = await fetch(`https://api.themoviedb.org/3/tv/${movieId}/watch/providers?api_key=3bbf380371a2169bd25b710058646650`);
         const data = await response.json();
         return data.results; // Return region-specific results
     } catch (error) {
@@ -89,16 +117,9 @@ async function getTVWatchProviders(movieId) {
 
 
 async function getWatchProviders(movieId) {
-	const options = {
-	  method: 'GET',
-	  headers: {
-		accept: 'application/json',
-		Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYmJmMzgwMzcxYTIxNjliZDI1YjcxMDA1ODY0NjY1MCIsIm5iZiI6MTczNjc3MjgxOC40NCwic3ViIjoiNjc4NTBjZDI5MGY0MmMzMjgzN2I2OTI5Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.5FAHYiJQCOUmzlPZdWYsxKQaX7vRpAZE81zgqMX9VmI'
-	  }
-	};
-	
+
 	try {
-        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/watch/providers`, options);
+        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=3bbf380371a2169bd25b710058646650`);
         const data = await response.json();
         return data.results; // Return region-specific results
     } catch (error) {
@@ -110,17 +131,10 @@ async function getWatchProviders(movieId) {
 
 async function getTvShowId(movieName) {
  
-	const options = {
-	  method: 'GET',
-	  headers: {
-		accept: 'application/json',
-		Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYmJmMzgwMzcxYTIxNjliZDI1YjcxMDA1ODY0NjY1MCIsIm5iZiI6MTczNjc3MjgxOC40NCwic3ViIjoiNjc4NTBjZDI5MGY0MmMzMjgzN2I2OTI5Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.5FAHYiJQCOUmzlPZdWYsxKQaX7vRpAZE81zgqMX9VmI'
-	  }
-	};
-    const url = `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(movieName)}`;
+	const url = `https://api.themoviedb.org/3/search/tv?api_key=3bbf380371a2169bd25b710058646650&query=${encodeURIComponent(movieName)}`;
 
 	try {
-        const response = await fetch(url, options);
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -145,19 +159,10 @@ async function getTvShowId(movieName) {
 
 async function getSimilarShows(movieId) {
    
-	const options = {
-	  method: 'GET',
-	  headers: {
-		accept: 'application/json',
-		Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYmJmMzgwMzcxYTIxNjliZDI1YjcxMDA1ODY0NjY1MCIsIm5iZiI6MTczNjc3MjgxOC40NCwic3ViIjoiNjc4NTBjZDI5MGY0MmMzMjgzN2I2OTI5Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.5FAHYiJQCOUmzlPZdWYsxKQaX7vRpAZE81zgqMX9VmI'
-	  }
-	};
-	
-	
-    const url = `https://api.themoviedb.org/3/tv/${movieId}/recommendations?language=en-US&page=1`;
+  const url = `https://api.themoviedb.org/3/tv/${movieId}/recommendations?api_key=3bbf380371a2169bd25b710058646650&language=en-US&page=1`;
 
   try {
-        const response = await fetch(url,options);
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -176,18 +181,11 @@ async function getSimilarShows(movieId) {
 
 
 async function getMovieId(movieName) {
-    const apiKey = 'YOUR_TMDB_API_KEY';
-	const options = {
-	  method: 'GET',
-	  headers: {
-		accept: 'application/json',
-		Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYmJmMzgwMzcxYTIxNjliZDI1YjcxMDA1ODY0NjY1MCIsIm5iZiI6MTczNjc3MjgxOC40NCwic3ViIjoiNjc4NTBjZDI5MGY0MmMzMjgzN2I2OTI5Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.5FAHYiJQCOUmzlPZdWYsxKQaX7vRpAZE81zgqMX9VmI'
-	  }
-	};
-    const url = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(movieName)}`;
+
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=3bbf380371a2169bd25b710058646650&query=${encodeURIComponent(movieName)}`;
 
 	try {
-        const response = await fetch(url, options);
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -212,19 +210,12 @@ async function getMovieId(movieName) {
 
 async function getSimilarMovies(movieId) {
    
-	const options = {
-	  method: 'GET',
-	  headers: {
-		accept: 'application/json',
-		Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYmJmMzgwMzcxYTIxNjliZDI1YjcxMDA1ODY0NjY1MCIsIm5iZiI6MTczNjc3MjgxOC40NCwic3ViIjoiNjc4NTBjZDI5MGY0MmMzMjgzN2I2OTI5Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.5FAHYiJQCOUmzlPZdWYsxKQaX7vRpAZE81zgqMX9VmI'
-	  }
-	};
-	
-	
-    const url = `https://api.themoviedb.org/3/movie/${movieId}/recommendations?language=en-US&page=1`;
+
+	const url = `https://api.themoviedb.org/3/movie/${movieId}/recommendations?api_key=3bbf380371a2169bd25b710058646650&language=en-US&page=1`;
+    
 
   try {
-        const response = await fetch(url,options);
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -301,8 +292,8 @@ function displayResults(movies, isMovie) {
 
         movie.watch.flatrate.forEach(provider => {
             const providerLink = document.createElement('a');
-            providerLink.href = movie.watch.link || '#'; // Use region-level link
-            providerLink.target = "_blank"; // Open in a new tab
+           // providerLink.href = movie.watch.link || '#'; // Use region-level link
+           // providerLink.target = "_blank"; // Open in a new tab
 
             const providerImg = new Image();
             providerImg.src = provider.logo_path
@@ -323,6 +314,56 @@ function displayResults(movies, isMovie) {
         container.appendChild(movieElement);
     });
 }
+
+function displayPopular(items) {
+    const container = document.getElementById("resultsContainer");
+    container.innerHTML = ""; // Clear previous results
+
+    items.forEach(item => {
+        const { id, title, name, poster_path, release_date, first_air_date, vote_average, genre_ids } = item;
+        const type = title ? "movie" : "tv";
+        const displayTitle = title || name;
+        const displayDate = release_date || first_air_date;
+
+        const movieElement = document.createElement("div");
+        movieElement.classList.add("movieItem");
+
+        const imgContainer = document.createElement("a");
+        imgContainer.href = "#";
+        imgContainer.addEventListener("click", async () => {
+            document.getElementById("movieInput").value = displayTitle;
+            
+            await searchContent();
+        });
+
+        const img = new Image();
+        img.src = poster_path ? `https://image.tmdb.org/t/p/w200${poster_path}` : "placeholder.jpg";
+        img.alt = displayTitle;
+        imgContainer.appendChild(img);
+
+        const details = document.createElement("div");
+        details.classList.add("movieDetails");
+
+        const titleElement = document.createElement("h2");
+        titleElement.textContent = displayTitle;
+
+        const dateElement = document.createElement("p");
+        dateElement.textContent = `Release Date: ${displayDate || "Unknown"}`;
+
+        const voteElement = document.createElement("p");
+        voteElement.textContent = `Rating: ${vote_average ? vote_average.toFixed(1) : "N/A"} ★`;
+
+        details.appendChild(titleElement);
+        details.appendChild(dateElement);
+        details.appendChild(voteElement);
+        
+
+        movieElement.appendChild(imgContainer);
+        movieElement.appendChild(details);
+        container.appendChild(movieElement);
+    });
+}
+
 
 
 
