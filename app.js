@@ -217,13 +217,15 @@ async function fetchAndDisplayPopularMovies() {
 	
     const url = `https://api.themoviedb.org/3/discover/movie?api_key=3bbf380371a2169bd25b710058646650&language=en-US&sort_by=popularity.desc&page=1`;
 
-    showLoader();
-    try {
+	try {
         const response = await fetch(url);
         const data = await response.json();
 
-        // Get Providers for popular movies
-        const popularMoviesWithProviders = await getMoviesWithProviders(data.results, true);
+        // Add isPopular property to the movies
+        const popularMovies = data.results.map(movie => ({ ...movie, isPopular: true }));
+
+        const popularMoviesWithProviders = await getMoviesWithProviders(popularMovies, true);
+
         displayPopular(popularMoviesWithProviders);
     } catch (error) {
         console.error("Error fetching popular movies:", error);
@@ -454,7 +456,7 @@ function displayPopular(movies) {
     container.innerHTML = ''; // Clear previous results
 
     movies.forEach(movie => {
-        displayItem(movie, true, container, false); // Pass true to skipProviderCheck
+        displayItem(movie, true, container, true); // Pass true to skipProviderCheck
     });
 }
 
@@ -518,18 +520,24 @@ async function displayActorResults(actors) {
     }
 }
 
-async function displayItem(movie, isMovie, container, skipProviderCheck = false) {
-    if (!skipProviderCheck && (!movie.watch || !movie.watch.flatrate)) return;
+async function displayItem(movie, isMovie, container) {
+    // Check for providers ONLY if it is not a popular movie.
+    if (!movie.watch || !movie.watch.flatrate) {
+        if (movie.isPopular) {
+            // If it's a popular movie and there are NO providers, we still display it, but without providers
+        } else {
+            return; // If it's NOT a popular movie and NO providers, we skip displaying it.
+        }
+    }
 
     const movieElement = document.createElement('div');
     movieElement.classList.add('movieItem');
 
-	const imgLink = document.createElement('a');
+    const imgLink = document.createElement('a');
     imgLink.href = '#';
     imgLink.addEventListener('click', async () => {
         document.getElementById('movieInput').value = movie.title || movie.name;
 
-        // Update active button and currentSearchType
         const buttons = document.querySelectorAll('.search-type-button');
         buttons.forEach(btn => btn.classList.remove('active'));
         const targetButton = document.querySelector(`.search-type-button[data-type="${isMovie ? 'movie' : 'tv'}"]`);
@@ -563,26 +571,28 @@ async function displayItem(movie, isMovie, container, skipProviderCheck = false)
     detailsContainer.appendChild(releaseDate);
     detailsContainer.appendChild(voteAverage);
 
-    const providersContainer = document.createElement('div');
-    providersContainer.classList.add('providersContainer');
-	if (!skipProviderCheck){
-		movie.watch.flatrate.forEach(provider => {
-			const providerLink = document.createElement('a');
-			const providerImg = new Image();
-			providerImg.src = provider.logo_path
-				? `https://image.tmdb.org/t/p/original${provider.logo_path}`
-				: 'default-provider-logo.png';
-			providerImg.alt = provider.provider_name;
-			providerImg.style.width = '50px';
+    if (movie.watch && movie.watch.flatrate) { // Check if providers exist before adding them
+        const providersContainer = document.createElement('div');
+        providersContainer.classList.add('providersContainer');
 
-			providerLink.appendChild(providerImg);
-			providersContainer.appendChild(providerLink);
-		});
-	}
+        movie.watch.flatrate.forEach(provider => {
+            const providerLink = document.createElement('a');
+            const providerImg = new Image();
+            providerImg.src = provider.logo_path
+                ? `https://image.tmdb.org/t/p/original${provider.logo_path}`
+                : 'default-provider-logo.png';
+            providerImg.alt = provider.provider_name;
+            providerImg.style.width = '50px';
+
+            providerLink.appendChild(providerImg);
+            providersContainer.appendChild(providerLink);
+        });
+
+        detailsContainer.appendChild(providersContainer);
+    }
 
     movieElement.appendChild(imgLink);
     movieElement.appendChild(detailsContainer);
-    detailsContainer.appendChild(providersContainer);
-
     container.appendChild(movieElement);
 }
+
