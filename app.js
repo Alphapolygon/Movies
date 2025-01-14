@@ -1,8 +1,38 @@
 
 let currentSearchType = 'movie'; // Default search type
+let userRegion = 'US'; // Default region fallback
 document.addEventListener("DOMContentLoaded", async () => {
     await fetchAndDisplayPopularMovies();
 });
+
+async function detectUserRegion() {
+    // Check if the region is already cached
+    const cachedRegion = localStorage.getItem('userRegions');
+    if (cachedRegion) {
+        userRegion = cachedRegion;
+        console.log(`Using cached region: ${userRegion}`);
+        return userRegion;
+    }
+
+    try {
+        // Fetch the user's region if not cached
+        const response = await fetch('https://ipapi.co/json/');
+        if (!response.ok) {
+            throw new Error('Failed to fetch region');
+        }
+        const data = await response.json();
+        userRegion = data.country_code; // Set userRegion to the detected country code
+        console.log(`Detected region: ${userRegion}`);
+
+        // Cache the detected region
+        localStorage.setItem('userRegions', userRegion);
+        return userRegion;
+    } catch (error) {
+        console.error('Error detecting user region:', error);
+        userRegion = 'US'; // Fallback to default region
+        return userRegion;
+    }
+}
 
 function updateSearchType() {
     const typeSelector = document.getElementById('typeSelector');
@@ -10,6 +40,8 @@ function updateSearchType() {
 }
 
 async function searchContent() {
+	await detectUserRegion();
+	
     const movieName = document.getElementById('movieInput').value.trim();
     
     if (!movieName) {
@@ -27,7 +59,7 @@ async function searchContent() {
 				const providers = await getWatchProviders(movie.id);
 
 				// Extract US-specific data or adjust for another region
-				const regionData = providers && providers['FI'];
+				const regionData = providers && providers[userRegion];
 				const watchLink = regionData ? regionData.link : null;
 				const flatrateProviders = regionData ? regionData.flatrate : null;
 
@@ -87,7 +119,9 @@ function hideLoader() {
 
 
 async function fetchAndDisplayPopularMovies() {
-    const url = `https://api.themoviedb.org/3/discover/movie?language=en-US&sort_by=popularity.desc&page=1`;
+	
+	
+    const url = `https://api.themoviedb.org/3/discover/movie?api_key=3bbf380371a2169bd25b710058646650&language=en-US&sort_by=popularity.desc&page=1`;
 
 	showLoader(); // Show loader while searching
     try {
