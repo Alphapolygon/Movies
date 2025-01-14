@@ -521,23 +521,23 @@ async function displayActorResults(actors) {
 }
 
 async function displayItem(movie, isMovie, container) {
-    // Check for providers ONLY if it is not a popular movie.
     if (!movie.watch || !movie.watch.flatrate) {
         if (movie.isPopular) {
-            // If it's a popular movie and there are NO providers, we still display it, but without providers
         } else {
-            return; // If it's NOT a popular movie and NO providers, we skip displaying it.
+            return;
         }
     }
 
     const movieElement = document.createElement('div');
     movieElement.classList.add('movieItem');
 
+    // Image Section (Left)
+    const imageContainer = document.createElement('div');
+    imageContainer.classList.add('image-container');
     const imgLink = document.createElement('a');
     imgLink.href = '#';
     imgLink.addEventListener('click', async () => {
         document.getElementById('movieInput').value = movie.title || movie.name;
-
         const buttons = document.querySelectorAll('.search-type-button');
         buttons.forEach(btn => btn.classList.remove('active'));
         const targetButton = document.querySelector(`.search-type-button[data-type="${isMovie ? 'movie' : 'tv'}"]`);
@@ -545,36 +545,56 @@ async function displayItem(movie, isMovie, container) {
             targetButton.classList.add('active');
             currentSearchType = isMovie ? 'movie' : 'tv';
         }
-
         await searchContent();
     });
-
     const img = new Image();
     img.src = `https://image.tmdb.org/t/p/w200${movie.poster_path}`;
     img.alt = isMovie ? movie.title : movie.name;
     img.style.cursor = 'pointer';
     imgLink.appendChild(img);
+    imageContainer.appendChild(imgLink);
+    movieElement.appendChild(imageContainer);
+
 
     const detailsContainer = document.createElement('div');
     detailsContainer.classList.add('movieDetails');
+    detailsContainer.style.display = 'grid';
+    detailsContainer.style.gridTemplateColumns = '1fr 1fr';
+    detailsContainer.style.gap = '5px';
+
+    const column1 = document.createElement('div');
+    const column2 = document.createElement('div');
 
     const title = document.createElement('h2');
     title.textContent = isMovie ? movie.title : movie.name;
+    column1.appendChild(title);
 
     const releaseDate = document.createElement('p');
     releaseDate.textContent = `Release Date: ${isMovie ? movie.release_date : movie.first_air_date}`;
+    column1.appendChild(releaseDate);
+
+    // *** NEW: Genre Display ***
+    const genreParagraph = document.createElement('p');
+    genreParagraph.textContent = "Genres: ";
+    if (movie.genre_ids) { //Check if genre_ids exists
+      const genreNames = await getGenreNames(movie.genre_ids, isMovie);
+      genreParagraph.textContent += genreNames.join(", "); //join the genres by comma
+    } else if (movie.genres) { //If full genre data is available from getMovieData/getTVShowData
+        const genreNames = movie.genres.map(genre => genre.name);
+        genreParagraph.textContent += genreNames.join(", ");
+    } else {
+      genreParagraph.textContent += "N/A";
+    }
+    column1.appendChild(genreParagraph);
 
     const voteAverage = document.createElement('p');
     voteAverage.innerHTML = `Rating: ${movie.vote_average.toFixed(1)} ⭐`;
+    column1.appendChild(voteAverage);
 
-    detailsContainer.appendChild(title);
-    detailsContainer.appendChild(releaseDate);
-    detailsContainer.appendChild(voteAverage);
-
-    if (movie.watch && movie.watch.flatrate) { // Check if providers exist before adding them
-        const providersContainer = document.createElement('div');
-        providersContainer.classList.add('providersContainer');
-
+    // Providers Section moved to column 1
+    const providersContainer = document.createElement('div');
+    providersContainer.classList.add('providersContainer');
+    if (movie.watch && movie.watch.flatrate) {
         movie.watch.flatrate.forEach(provider => {
             const providerLink = document.createElement('a');
             const providerImg = new Image();
@@ -587,12 +607,113 @@ async function displayItem(movie, isMovie, container) {
             providerLink.appendChild(providerImg);
             providersContainer.appendChild(providerLink);
         });
-
-        detailsContainer.appendChild(providersContainer);
     }
+    column1.appendChild(providersContainer);
 
-    movieElement.appendChild(imgLink);
+
+    // Fetch and display director and cast (Now in column 2)
+    try {
+        const credits = await getCredits(movie.id, isMovie);
+        if (credits) {
+            if (credits.crew) {
+                const director = credits.crew.find(person => person.job === 'Director');
+                if (director) {
+                    const directorLink = document.createElement('a');
+                    directorLink.href = '#';
+                    directorLink.textContent = `Director: ${director.name}`;
+                    directorLink.addEventListener('click', () => {
+                        document.getElementById('movieInput').value = director.name;
+                        const buttons = document.querySelectorAll('.search-type-button');
+                        buttons.forEach(btn => btn.classList.remove('active'));
+                        const targetButton = document.querySelector(`.search-type-button[data-type="actor"]`);
+                        if (targetButton) {
+                            targetButton.classList.add('active');
+                            currentSearchType = "actor";
+                        }
+                        searchContent();
+                    });
+                    column2.appendChild(directorLink);
+                    column2.appendChild(document.createElement('br'));
+                }
+            }
+
+            if (credits.cast && credits.cast.length > 0) {
+                const castHeading = document.createElement('p');
+                castHeading.textContent = "Cast:";
+                column2.appendChild(castHeading);
+
+                const topCast = credits.cast.slice(0, 5);
+
+                topCast.forEach(actor => {
+                    const actorLink = document.createElement('a');
+                    actorLink.href = '#';
+                    actorLink.textContent = actor.name;
+                    actorLink.addEventListener('click', () => {
+                        document.getElementById('movieInput').value = actor.name;
+                        const buttons = document.querySelectorAll('.search-type-button');
+                        buttons.forEach(btn => btn.classList.remove('active'));
+                        const targetButton = document.querySelector(`.search-type-button[data-type="actor"]`);
+                        if (targetButton) {
+                            targetButton.classList.add('active');
+                            currentSearchType = "actor";
+                        }
+                        searchContent();
+                    });
+                    column2.appendChild(actorLink);
+                    column2.appendChild(document.createTextNode(""));
+                });
+                if(column2.lastChild){
+                    column2.lastChild.remove();
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Error fetching credits:", error);
+    }
+    detailsContainer.appendChild(column1);
+    detailsContainer.appendChild(column2);
+
     movieElement.appendChild(detailsContainer);
     container.appendChild(movieElement);
 }
 
+async function getCredits(movieId, isMovie) {
+    const url = `https://api.themoviedb.org/3/${isMovie ? 'movie' : 'tv'}/${movieId}/credits?api_key=3bbf380371a2169bd25b710058646650`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error fetching credits:", error);
+        return null;
+    }
+}
+
+// *** NEW: Function to fetch genre names ***
+async function getGenreNames(genreIds, isMovie) {
+    const genreList = isMovie ? 'movie' : 'tv';
+    const cachedGenres = localStorage.getItem(`genres-${genreList}`);
+    if (cachedGenres) {
+        const genres = JSON.parse(cachedGenres);
+        return genreIds.map(id => {
+            const genre = genres.find(g => g.id === id);
+            return genre ? genre.name : null;
+        }).filter(name => name !== null); // Filter out nulls
+    }
+
+    try {
+        const response = await fetch(`https://api.themoviedb.org/3/genre/${genreList}/list?api_key=3bbf380371a2169bd25b710058646650`);
+        const data = await response.json();
+        if (data && data.genres) {
+            localStorage.setItem(`genres-${genreList}`, JSON.stringify(data.genres));
+            return genreIds.map(id => {
+                const genre = data.genres.find(g => g.id === id);
+                return genre ? genre.name : null;
+            }).filter(name => name !== null);
+        }
+        return [];
+    } catch (error) {
+        console.error("Error fetching genre list:", error);
+        return [];
+    }
+}
