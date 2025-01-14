@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What To Watch Next</title>
     <style>	
+        /* Light mode styles (default) */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f5;
+            color: #333;
             margin: 0;
             padding: 0;
         }
@@ -19,11 +21,6 @@
             text-align: center;
         }
 
-        header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
         .container {
             max-width: 800px;
             margin: 20px auto;
@@ -31,6 +28,24 @@
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dark mode styles */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
+
+            header {
+                background-color: #1e1e1e;
+                color: #fff;
+            }
+
+            .container {
+                background: #1e1e1e;
+                box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+            }
         }
 
         #searchForm {
