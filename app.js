@@ -73,9 +73,6 @@ async function getMovieSuggestions(query) {
 
 
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await fetchAndDisplayPopularMovies();
-});
 
 async function detectUserRegion() {
     // Check if the region is already cached
@@ -216,16 +213,14 @@ async function searchActors(actorName) {
 
 
 async function fetchAndDisplayPopularMovies() {
-	
-	
     const url = `https://api.themoviedb.org/3/discover/movie?api_key=3bbf380371a2169bd25b710058646650&language=en-US&sort_by=popularity.desc&page=1`;
 
-	try {
+    try {
         const response = await fetch(url);
         const data = await response.json();
 
-        // Add isPopular property to the movies
-        const popularMovies = data.results.map(movie => ({ ...movie, isPopular: true }));
+        // Add isPopular property and CAP to 10
+        const popularMovies = data.results.slice(0, 10).map(movie => ({ ...movie, isPopular: true }));
 
         const popularMoviesWithProviders = await getMoviesWithProviders(popularMovies, true);
 
