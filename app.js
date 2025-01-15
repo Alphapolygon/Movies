@@ -439,12 +439,6 @@ async function displayActorResults(actors) {
 			}, FILMOGRAPHY_REQUEST_DELAY);
 		});
         detailsDiv.appendChild(filmographyButton);
-
-
-
-
-
-
         actorDiv.appendChild(detailsDiv);
         container.appendChild(actorDiv);
     }
@@ -511,7 +505,7 @@ async function displayActorFilmography(actorId, actorName) {
 
             // *** Initial display ***
             displayNextCredits();
-
+			
             // *** Load More Button ***
             const loadMoreButton = document.createElement('button');
             loadMoreButton.textContent = 'Load More';
