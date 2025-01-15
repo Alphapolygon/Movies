@@ -731,9 +731,14 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     // Providers Section moved to column 1
     const providersContainer = document.createElement('div');
     providersContainer.classList.add('providersContainer');
-    if (item.watch && item.watch.flatrate) {
+	if (item.watch && item.watch.flatrate) {
         item.watch.flatrate.forEach(provider => {
             const providerLink = document.createElement('a');
+            // *** KEY CHANGE: Set the href ***
+            providerLink.href = item.watch.link ? item.watch.link : "#"; // Use the main watch link
+            providerLink.target = '_blank'; // Open in new tab
+            providerLink.rel = 'noopener noreferrer'; // Security best practice
+
             const providerImg = new Image();
             providerImg.src = provider.logo_path
                 ? `https://image.tmdb.org/t/p/original${provider.logo_path}`
