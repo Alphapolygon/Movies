@@ -452,6 +452,14 @@ async function displayActorFilmography(actorId, actorName) {
         const credits = await getActorCredits(actorId);
         if (credits && credits.cast) {
             allCredits = [...credits.cast, ...credits.crew];
+			
+			// *** FILTER CREDITS HERE (BEFORE PROVIDER FETCHING) ***
+			allCredits = allCredits.filter(credit => 
+				credit.character && 
+				credit.character.trim() !== "" &&
+				credit.character !== "Self" &&
+				credit.character !==  actorName // Check title/name against actorName
+			);
 
             const uniqueCredits = [];
             const seenIds = new Set();
@@ -526,7 +534,9 @@ async function displayActorFilmography(actorId, actorName) {
         }
         const tempContainer = document.createElement('div'); // Create a temporary container
         nextCredits.forEach(credit => {
-            displayItem(credit, credit.media_type === 'movie', tempContainer, false, true); // Append to temp container
+		
+			displayItem(credit, credit.media_type === 'movie', tempContainer, false, true); // Append to temp container
+			 
         });
         container.insertBefore(tempContainer, document.querySelector(".load-more-button")); //Insert before the load more button
         currentStartIndex += creditsPerPage;
