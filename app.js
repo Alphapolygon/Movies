@@ -1,4 +1,4 @@
-const API_KEY = '3bbf380371a2169bd25b710058646650'; // Store API Key as a constant
+const API_KEY = '3bbf380371a2169bd25b710058646650';
 const BASE_API_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w200';
 const ORIGINAL_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
@@ -7,14 +7,7 @@ const CREDITS_PER_PAGE = 10;
 let currentSearchType = 'movie';
 let userRegion = 'US';
 let filmographyRequestTimer;
-
-// Cache to store API responses in memory
-let apiCache = {
-    genres: {},
-    credits: {}
-};
-
-// DOM Elements (Cache these for better performance)
+let apiCache = { genres: {}, credits: {} };
 const movieInput = document.getElementById('movieInput');
 const suggestionsList = document.getElementById('suggestions');
 const searchForm = document.getElementById('searchForm');
@@ -25,14 +18,18 @@ const loader = document.getElementById('loader');
 
 function setupTypeButtons() {
     const buttons = document.querySelectorAll('.search-type-button');
+    let previousActiveButton = null; // Track the previously active button
+
     buttons.forEach(button => {
         button.addEventListener('click', () => {
-            // Use a more performant way to toggle classes:
-            buttons.forEach(btn => btn.classList.toggle('active', btn === button));
+            if (previousActiveButton) {
+                previousActiveButton.classList.remove('active'); // Remove from previous
+            }
+            button.classList.add('active'); // Add to current
+            previousActiveButton = button; // Update the tracker
             currentSearchType = button.dataset.type;
-
             // Optionally trigger a search immediately when the type changes:
-            // searchContent(); 
+            // searchContent();
         });
     });
 }
@@ -62,16 +59,38 @@ async function detectUserRegion() {
     }
 }
 
+// Improved fetchData with full URL caching
 async function fetchData(url) {
     if (apiCache[url]) {
-        return apiCache[url];  // Return cached response if available
+        return apiCache[url];
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
-    apiCache[url] = data;  // Cache the fetched response
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}: ${response.statusText} for URL: ${url}`);
+        }
+        const data = await response.json();
+        apiCache[url] = data;
+        return data;
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        // Display a more user-friendly error message in the UI if possible
+        return null; // Important: Return null to handle errors gracefully
+    }
+}
 
-    return data;
+// Reusable function for handling item/person clicks
+async function handleItemOrPersonClick(name, searchType, isMovie) {
+    movieInput.value = name;
+    const buttons = document.querySelectorAll('.search-type-button');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    const targetButton = document.querySelector(`.search-type-button[data-type="${searchType}"]`);
+    if (targetButton) {
+        targetButton.classList.add('active');
+        currentSearchType = searchType;
+    }
+    await searchContent();
 }
 
 
@@ -91,22 +110,27 @@ async function searchContent() {
         switch (currentSearchType) {
             case 'movie':
                 results = await searchItems('movie', movieName);
-                displayResults(results, true);
                 break;
             case 'tv':
                 results = await searchItems('tv', movieName);
-                displayResults(results, false);
                 break;
             case 'actor':
                 const actors = await searchActors(movieName);
                 if (actors && actors.length > 0) {
                     displayActorResults(actors);
+                    return; // Important: Return here to avoid displayResults below
                 } else {
                     alert("No actors found.");
+                    return;
                 }
-                break;
+            default:
+                return;
         }
-
+        if(results) {
+            displayResults(results, currentSearchType === 'movie');
+        } else {
+            alert("Item not found. Please check the spelling and try again.");
+        }
     } catch (error) {
         console.error('Error:', error);
         alert("An error occurred. Please try again.");
@@ -249,25 +273,20 @@ async function displayResults(results, isMovie) {
 
     const { searchedItem, similarItems } = results;
 
-    try {
-        if (searchedItem) {
-            displayItem(searchedItem, isMovie, resultsContainer, true);
-            await delay(1000); // Delay before showing similar items
-        }
+    if (searchedItem) {
+        displayItem(searchedItem, isMovie, resultsContainer, true);
+        await delay(1000); // Delay before showing similar items
+    }
 
-        if (similarItems && similarItems.length > 0) {
-            const separatorRow = document.createElement('div');
-            separatorRow.classList.add('separator-row');
-            separatorRow.textContent = `People who watched ${searchedItem.title || searchedItem.name} also watched:`;
-            resultsContainer.appendChild(separatorRow);
+    if (similarItems && similarItems.length > 0) {
+        const separatorRow = document.createElement('div');
+        separatorRow.classList.add('separator-row');
+        separatorRow.textContent = `People who watched ${searchedItem.title || searchedItem.name} also watched:`;
+        resultsContainer.appendChild(separatorRow);
 
-            similarItems.forEach(item => {
-                displayItem(item, item.media_type === 'movie', resultsContainer, false);
-            });
-        }
-    } catch (error) {
-        console.error("Error displaying results:", error);
-        alert("An error occurred displaying the results.");
+        similarItems.forEach(item => {
+            displayItem(item, item.media_type === 'movie', resultsContainer, false);
+        });
     }
 }
 
@@ -279,30 +298,25 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     const movieElement = document.createElement('div');
     movieElement.classList.add('movieItem');
 
+    // Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
+
     const imageContainer = document.createElement('div');
     imageContainer.classList.add('image-container');
     const imgLink = document.createElement('a');
     imgLink.href = '#';
-    imgLink.addEventListener('click', async () => {
-        movieInput.value = item.title || item.name;
-        // Set the correct search type button active
-        const buttons = document.querySelectorAll('.search-type-button');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        const targetButton = document.querySelector(`.search-type-button[data-type="${isMovie ? 'movie' : 'tv'}"]`);
-        if (targetButton) {
-            targetButton.classList.add('active');
-            currentSearchType = isMovie ? 'movie' : 'tv';
-        }
-        await searchContent();
-    });
+    imgLink.addEventListener('click', () => handleItemOrPersonClick(item.title || item.name, isMovie ? 'movie' : 'tv', isMovie));
 
     const img = new Image();
+    img.onload = () => {}; // Do nothing on load for now
+    img.onerror = () => { img.src = 'placeholder.jpg'; }; // Handle image loading errors
     img.src = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'placeholder.jpg';
     img.alt = item.title || item.name;
     img.style.cursor = 'pointer';
+
     imgLink.appendChild(img);
     imageContainer.appendChild(imgLink);
-    movieElement.appendChild(imageContainer);
+    fragment.appendChild(imageContainer);
 
     const detailsContainer = document.createElement('div');
     detailsContainer.classList.add('movieDetails');
@@ -398,7 +412,8 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
 
     detailsContainer.appendChild(column1);
     detailsContainer.appendChild(column2);
-    movieElement.appendChild(detailsContainer);
+     fragment.appendChild(detailsContainer); // Append details to fragment
+    movieElement.appendChild(fragment); // Append fragment to movieElement
     container.appendChild(movieElement);
 }
 
@@ -408,23 +423,31 @@ async function getCredits(itemId, isMovie) {
     return await fetchData(url);
 }
 
+// Improved genre caching
+let allGenresCache = JSON.parse(localStorage.getItem('all_genres')) || {};
+
 async function getGenreNames(genreIds, isMovie) {
     if (!genreIds || genreIds.length === 0) return [];
 
-    const type = isMovie ? 'movie' : 'tv';
-    const cachedGenres = JSON.parse(localStorage.getItem(`${type}_genres`)) || {};
+    let missingGenreIds = genreIds.filter(id => !allGenresCache[id]);
 
-    let missingGenreIds = genreIds.filter(id => !cachedGenres[id]);
     if (missingGenreIds.length > 0) {
+        const type = isMovie ? 'movie' : 'tv';
         const url = `${BASE_API_URL}/genre/${type}/list?api_key=${API_KEY}&language=en-US`;
-        const data = await fetchData(url);
-        if (data && data.genres) {
-            data.genres.forEach(genre => cachedGenres[genre.id] = genre.name);
-            localStorage.setItem(`${type}_genres`, JSON.stringify(cachedGenres));
+
+        try {
+            const data = await fetchData(url);
+            if (data && data.genres) {
+                data.genres.forEach(genre => allGenresCache[genre.id] = { name: genre.name, type });
+                localStorage.setItem('all_genres', JSON.stringify(allGenresCache));
+            }
+        } catch (error) {
+            console.error("Error fetching genres:", error);
+            return []; // Return empty array on error
         }
     }
 
-    return genreIds.map(id => cachedGenres[id]).filter(name => name);
+    return genreIds.map(id => allGenresCache[id]?.name).filter(name => name);
 }
 
 function handlePersonClick(personName, searchType) {
@@ -598,18 +621,19 @@ async function getActorCredits(actorId) {
     }
 }
 
+// Consistent async/await in getMovieSuggestions
 async function getMovieSuggestions(query) {
     const url = `${BASE_API_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}`;
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error ${response.status}: ${response.statusText} for URL: ${url}`);
         }
         const data = await response.json();
         return data.results;
     } catch (error) {
-        console.error("Error fetching suggestions", error);
-        return []; // Return an empty array in case of error, to prevent further issues
+        console.error("Error fetching suggestions:", error);
+        return [];
     }
 }
 
@@ -671,4 +695,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 //Helper function to delay execution
-const delay = ms => new Promise(res => setTimeout(res, ms));
+const delay = ms => new Promise(res => setTimeout(res, ms)); // Delay function
