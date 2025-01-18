@@ -8,12 +8,20 @@ let currentSearchType = 'movie';
 let userRegion = 'US';
 let filmographyRequestTimer;
 
+// Cache to store API responses in memory
+let apiCache = {
+    genres: {},
+    credits: {}
+};
+
 // DOM Elements (Cache these for better performance)
 const movieInput = document.getElementById('movieInput');
 const suggestionsList = document.getElementById('suggestions');
 const searchForm = document.getElementById('searchForm');
 const resultsContainer = document.getElementById('resultsContainer');
 const loader = document.getElementById('loader');
+
+
 
 function setupTypeButtons() {
     const buttons = document.querySelectorAll('.search-type-button');
@@ -54,20 +62,18 @@ async function detectUserRegion() {
     }
 }
 
-// Helper function to fetch data from the API
 async function fetchData(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        alert(`An error occurred: ${error.message}`);
-        return null;
+    if (apiCache[url]) {
+        return apiCache[url];  // Return cached response if available
     }
+
+    const response = await fetch(url);
+    const data = await response.json();
+    apiCache[url] = data;  // Cache the fetched response
+
+    return data;
 }
+
 
 // ... (getMovieSuggestions, detectUserRegion, setupTypeButtons remain mostly the same)
 
@@ -311,10 +317,17 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     title.textContent = item.title || item.name;
     column1.appendChild(title);
 
-    const releaseDate = document.createElement('p');
-    const date = item.release_date || item.first_air_date;
-    releaseDate.textContent = `Release Date: ${date ? new Date(date).toLocaleDateString() : "N/A"}`;
-    column1.appendChild(releaseDate);
+	const releaseDate = document.createElement('p');
+	const date = item.release_date || item.first_air_date;
+
+	if (date) {
+	  const year = new Date(date).getFullYear();
+	  releaseDate.textContent = `Release Year: ${year}`;
+	} else {
+	  releaseDate.textContent = "Release Year: N/A";
+	}
+
+	column1.appendChild(releaseDate);
 
     const genreParagraph = document.createElement('p');
     genreParagraph.textContent = "Genres: ";
@@ -569,10 +582,21 @@ async function displayActorFilmography(actorId, actorName) {
 }
 
 async function getActorCredits(actorId) {
-    const url = `${BASE_API_URL}/person/${actorId}/combined_credits?api_key=${API_KEY}`;
-    return await fetchData(url);
-}
+    const cacheKey = `${BASE_API_URL}/person/${actorId}/combined_credits?api_key=${API_KEY}`;
+    
+    if (apiCache.credits[cacheKey]) {
+        return apiCache.credits[cacheKey];  // Return cached credits if available
+    }
 
+    try {
+        const response = await fetchData(cacheKey);
+        apiCache.credits[cacheKey] = response;  // Cache the fetched credits
+        return response;
+    } catch (error) {
+        console.error("Error fetching actor credits:", error);
+        return null;
+    }
+}
 
 async function getMovieSuggestions(query) {
     const url = `${BASE_API_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}`;
