@@ -24,10 +24,10 @@ function setupTypeButtons() {
     const buttons = document.querySelectorAll('.search-type-button');
     buttons.forEach(button => {
         button.addEventListener('click', () => {
-            buttons.forEach(btn => btn.classList.remove('active')); // Remove active from ALL buttons
-            button.classList.add('active'); // Add active to the clicked button
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
             currentSearchType = button.dataset.type;
-           // searchContent(); // Trigger search when type changes
+            searchContent();
         });
     });
 }
@@ -116,15 +116,24 @@ async function searchContent() {
                 const actors = await searchActors(movieName);
                 if (actors && actors.length > 0) {
                     displayActorResults(actors);
-                    return; // Important: Return here to avoid displayResults below
+                    return;
                 } else {
                     alert("No actors found.");
+                    return;
+                }
+            case 'director': // New case for director search
+                const directors = await searchDirectors(movieName);
+                if (directors && directors.length > 0) {
+                    displayDirectorResults(directors);
+                    return;
+                } else {
+                    alert("No directors found.");
                     return;
                 }
             default:
                 return;
         }
-        if(results) {
+        if (results) {
             displayResults(results, currentSearchType === 'movie');
         } else {
             alert("Item not found. Please check the spelling and try again.");
@@ -134,6 +143,21 @@ async function searchContent() {
         alert("An error occurred. Please try again.");
     } finally {
         hideLoader();
+    }
+}
+
+async function searchDirectors(directorName) {
+    const url = `${BASE_API_URL}/search/person?api_key=${API_KEY}&query=${encodeURIComponent(directorName)}`;
+    try {
+        const data = await fetchData(url);
+        if (data && data.results) {
+            // Filter results to only include people with known for department directing
+            return data.results.filter(person => person.known_for_department === 'Directing');
+        }
+        return null;
+    } catch (error) {
+        console.error("Error searching directors:", error);
+        return null;
     }
 }
 
@@ -223,6 +247,65 @@ function displayPopular(movies) {
         displayItem(movie, true, resultsContainer, true);
     });
 }
+
+async function displayDirectorResults(directors) {
+    resultsContainer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    for (const director of directors) {
+        const directorDiv = document.createElement('div');
+        directorDiv.classList.add('movieItem');
+
+        const img = new Image();
+        img.onload = () => {
+            img.classList.remove('loading');
+            img.classList.add('loaded');
+        };
+        img.onerror = () => {
+            img.src = 'placeholder.jpg';
+            img.alt = "Image could not be loaded";
+            img.classList.remove('loading');
+            img.classList.add('loaded');
+        };
+
+        img.dataset.src = director.profile_path ? `${IMAGE_BASE_URL}${director.profile_path}` : 'placeholder.jpg';
+        img.alt = director.name;
+        img.classList.add('loading');
+        //img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
+
+        directorDiv.appendChild(img);
+
+        const detailsDiv = document.createElement('div');
+        detailsDiv.classList.add('movieDetails');
+
+        const nameHeading = document.createElement('h2');
+        nameHeading.textContent = director.name;
+        detailsDiv.appendChild(nameHeading);
+
+        const filmographyButton = document.createElement('button');
+        filmographyButton.textContent = 'Filmography';
+        filmographyButton.classList.add('filmography-button');
+        filmographyButton.addEventListener('click', async () => {
+            if (filmographyRequestTimer) {
+                clearTimeout(filmographyRequestTimer);
+            }
+
+            filmographyRequestTimer = setTimeout(async () => {
+                filmographyRequestTimer = null;
+                 await displayActorFilmography(director.id, director.name, true); // isDirector = true for directors
+            }, FILMOGRAPHY_REQUEST_DELAY);
+        });
+        detailsDiv.appendChild(filmographyButton);
+
+        directorDiv.appendChild(detailsDiv);
+        fragment.appendChild(directorDiv);
+    }
+
+    resultsContainer.appendChild(fragment);
+    requestAnimationFrame(lazyLoadImages);
+}
+
+
 
 async function displayResults(results, isMovie) {
     resultsContainer.innerHTML = '';
@@ -360,8 +443,8 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     column1.appendChild(voteAverage);
 	
 
-const providersContainer = document.createElement('div');
-   if (item.watch && item.watch.flatrate) {
+	const providersContainer = document.createElement('div');
+	if (item.watch && item.watch.flatrate) {
         
         providersContainer.classList.add('providersContainer');
 
@@ -405,7 +488,7 @@ const providersContainer = document.createElement('div');
                 const directorLink = document.createElement('a');
                 directorLink.href = '#';
                 directorLink.textContent = `Director: ${director.name}`;
-                directorLink.addEventListener('click', () => handlePersonClick(director.name, "actor"));
+                directorLink.addEventListener('click', () => handlePersonClick(director.name, 'director', true));
 
                 column2.appendChild(directorLink);
                 column2.appendChild(document.createElement('br'));
@@ -475,16 +558,26 @@ async function getGenreNames(genreIds, isMovie) {
     return genreIds.map(id => allGenresCache[id]?.name).filter(name => name);
 }
 
-function handlePersonClick(personName, searchType) {
-    movieInput.value = personName;
-    const buttons = document.querySelectorAll('.search-type-button');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    const targetButton = document.querySelector(`.search-type-button[data-type="${searchType}"]`);
-    if (targetButton) {
-        targetButton.classList.add('active');
-        currentSearchType = searchType;
-    }
-    searchContent();
+async function handlePersonClick(personName, searchType) {
+
+    movieInput.value = personName;
+
+    const buttons = document.querySelectorAll('.search-type-button');
+
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    const targetButton = document.querySelector(`.search-type-button[data-type="${searchType}"]`);
+
+    if (targetButton) {
+
+        targetButton.classList.add('active');
+
+        currentSearchType = searchType;
+
+    }
+
+    searchContent();
+
 }
 
 async function displayActorResults(actors) {
@@ -530,7 +623,7 @@ async function displayActorResults(actors) {
 
             filmographyRequestTimer = setTimeout(async () => {
                 filmographyRequestTimer = null;
-                await displayActorFilmography(actor.id, actor.name);
+                await displayActorFilmography(actor.id, actor.name, false); // isDirector = false for actors
             }, FILMOGRAPHY_REQUEST_DELAY);
         });
 		
@@ -544,11 +637,12 @@ async function displayActorResults(actors) {
    
 }
 
-async function displayActorFilmography(actorId, actorName) {
+async function displayActorFilmography(actorId, actorName, isDirector = false) {
     resultsContainer.innerHTML = '';
 	showLoader(); // Show the loader *before* fetching data
 
     let allCredits = [];
+	let DirectorCredits = [];
     let currentStartIndex = 0;
     let filmographyWithProviders = [];
 
@@ -556,15 +650,6 @@ async function displayActorFilmography(actorId, actorName) {
         const credits = await getActorCredits(actorId);
         if (credits && credits.cast) {
             allCredits = [...credits.cast, ...credits.crew];
-
-            // Filter credits (before provider fetching)
-            allCredits = allCredits.filter(credit =>
-                credit.character &&
-                credit.character.trim() !== "" &&
-                credit.character !== "Self" &&
-                credit.character !== actorName
-            );
-
             //Make credits unique based on id
             const uniqueCredits = [];
             const seenIds = new Set();
@@ -575,17 +660,32 @@ async function displayActorFilmography(actorId, actorName) {
                 }
             }
             allCredits = uniqueCredits;
-
-          //  allCredits.sort((a, b) => new Date(b.release_date || b.first_air_date || 0) - new Date(a.release_date || a.first_air_date || 0));
-
+			
             if (allCredits.length === 0) {
                 const noResultsMessage = document.createElement("p");
                 noResultsMessage.textContent = `No filmography found for ${actorName}`;
                 resultsContainer.appendChild(noResultsMessage);
                 return;
             }
-
-            filmographyWithProviders = await Promise.all(allCredits.map(async (item) => {
+			
+			let filteredCredits;
+			if (isDirector) {
+				filteredCredits = allCredits.filter(credit => credit.job === "Director" && credit.media_type === "movie");
+				if (filteredCredits.length === 0) {
+					resultsContainer.innerHTML = `<p>No directed movies found for ${actorName}.</p>`;
+					return;
+				}
+			} else {
+				filteredCredits = allCredits.filter(credit => credit.media_type === "movie");
+				if (filteredCredits.length === 0) {
+					resultsContainer.innerHTML = `<p>No acted in movies found for ${actorName}.</p>`;
+					return;
+				}
+			}
+			
+			const uniqueCredits2 = Array.from(new Set(filteredCredits.map(JSON.stringify))).map(JSON.parse);
+	
+            filmographyWithProviders = await Promise.all(uniqueCredits2.map(async (item) => {
                 try {
                     const isMovie = item.media_type === 'movie';
                     const providers = await getWatchProviders(item.id, item.media_type);
