@@ -11,6 +11,10 @@ let apiCache = { genres: {}, credits: {} };
 const movieInput = document.getElementById('movieInput');
 const suggestionsList = document.getElementById('suggestions');
 const searchForm = document.getElementById('searchForm');
+searchForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    searchContent();
+});
 const resultsContainer = document.getElementById('resultsContainer');
 const loader = document.getElementById('loader');
 
@@ -18,18 +22,12 @@ const loader = document.getElementById('loader');
 
 function setupTypeButtons() {
     const buttons = document.querySelectorAll('.search-type-button');
-    let previousActiveButton = null; // Track the previously active button
-
     buttons.forEach(button => {
         button.addEventListener('click', () => {
-            if (previousActiveButton) {
-                previousActiveButton.classList.remove('active'); // Remove from previous
-            }
-            button.classList.add('active'); // Add to current
-            previousActiveButton = button; // Update the tracker
+            buttons.forEach(btn => btn.classList.remove('active')); // Remove active from ALL buttons
+            button.classList.add('active'); // Add active to the clicked button
             currentSearchType = button.dataset.type;
-            // Optionally trigger a search immediately when the type changes:
-            // searchContent();
+           // searchContent(); // Trigger search when type changes
         });
     });
 }
@@ -308,11 +306,19 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     imgLink.addEventListener('click', () => handleItemOrPersonClick(item.title || item.name, isMovie ? 'movie' : 'tv', isMovie));
 
     const img = new Image();
-    img.onload = () => {}; // Do nothing on load for now
-    img.onerror = () => { img.src = 'placeholder.jpg'; }; // Handle image loading errors
+    img.onload = () => {
+        img.classList.remove('loading'); // Remove loading class when loaded
+        img.classList.add('loaded');
+    };
+    img.onerror = () => {
+        img.src = 'placeholder.jpg';
+        img.alt = "Image could not be loaded";
+        img.classList.remove('loading'); // Remove loading class even on error
+        img.classList.add('loaded'); // Add loaded class in case of error to prevent further attempts
+    };
     img.src = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'placeholder.jpg';
     img.alt = item.title || item.name;
-    img.style.cursor = 'pointer';
+    img.classList.add('loading'); // Add loading class initially
 
     imgLink.appendChild(img);
     imageContainer.appendChild(imgLink);
@@ -465,13 +471,27 @@ function handlePersonClick(personName, searchType) {
 async function displayActorResults(actors) {
     resultsContainer.innerHTML = '';
 
+    const fragment = document.createDocumentFragment(); // Use a DocumentFragment
+
     for (const actor of actors) {
         const actorDiv = document.createElement('div');
-        actorDiv.classList.add('movieItem');
+        actorDiv.classList.add('movieItem'); // Use the same class for consistent styling
 
-        const img = document.createElement('img');
+        const img = new Image();
+        img.onload = () => {
+            img.classList.remove('loading');
+            img.classList.add('loaded');
+        };
+        img.onerror = () => {
+            img.src = 'placeholder.jpg';
+            img.alt = "Image could not be loaded";
+            img.classList.remove('loading');
+            img.classList.add('loaded');
+        };
         img.src = actor.profile_path ? `${IMAGE_BASE_URL}${actor.profile_path}` : 'placeholder.jpg';
         img.alt = actor.name;
+        img.classList.add('loading');
+
         actorDiv.appendChild(img);
 
         const detailsDiv = document.createElement('div');
@@ -497,12 +517,16 @@ async function displayActorResults(actors) {
         detailsDiv.appendChild(filmographyButton);
 
         actorDiv.appendChild(detailsDiv);
-        resultsContainer.appendChild(actorDiv);
+        fragment.appendChild(actorDiv); // Append to fragment
     }
+
+    resultsContainer.appendChild(fragment); // Append fragment to container
+    lazyLoadImages(); //Call lazy load function
 }
 
 async function displayActorFilmography(actorId, actorName) {
     resultsContainer.innerHTML = '';
+	showLoader(); // Show the loader *before* fetching data
 
     let allCredits = [];
     let currentStartIndex = 0;
@@ -532,7 +556,7 @@ async function displayActorFilmography(actorId, actorName) {
             }
             allCredits = uniqueCredits;
 
-            allCredits.sort((a, b) => new Date(b.release_date || b.first_air_date || 0) - new Date(a.release_date || a.first_air_date || 0));
+          //  allCredits.sort((a, b) => new Date(b.release_date || b.first_air_date || 0) - new Date(a.release_date || a.first_air_date || 0));
 
             if (allCredits.length === 0) {
                 const noResultsMessage = document.createElement("p");
@@ -580,7 +604,10 @@ async function displayActorFilmography(actorId, actorName) {
     } catch (error) {
         console.error("Error fetching actor credits:", error);
         alert("An error occurred fetching filmography.");
+     } finally {
+        hideLoader();//Hide the loader even if there is an error
     }
+	
 
     function displayNextCredits() {
         const nextCredits = filmographyWithProviders.slice(currentStartIndex, currentStartIndex + CREDITS_PER_PAGE);
@@ -645,6 +672,24 @@ function hideLoader() {
     loader.style.display = 'none';
 }
 
+function lazyLoadImages() {
+    const images = document.querySelectorAll('.movieItem img.loading');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.src; // Force image load
+                img.classList.remove('loading');
+                observer.unobserve(img);
+            }
+        });
+    });
+
+    images.forEach(image => {
+        observer.observe(image);
+    });
+}
+
 
 
 // Event Listeners
@@ -681,6 +726,10 @@ movieInput.addEventListener('input', () => {
 
 searchForm.addEventListener('submit', () => {
     suggestionsList.innerHTML = '';
+});
+
+document.getElementById('header-link').addEventListener('click', () => {
+    location.reload();
 });
 
 document.addEventListener('click', (event) => {

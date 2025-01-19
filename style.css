@@ -1,0 +1,324 @@
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #1e1e2f, #2c2c44);
+    color: #eee; /* Changed to a lighter color for better contrast on the dark background */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+header {
+    width: 100%;
+    background: rgba(30, 30, 47, 0.85);
+    backdrop-filter: blur(8px);
+    padding: 10px 0; /* Reduced padding */
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+}
+
+#header-link {
+    display: block; /* Makes the link clickable */
+    text-decoration: none; /* Remove underline from link */
+}
+
+#header-logo {
+    max-height: 60px; /* Set a maximum height for the logo */
+    width: auto;      /* Maintain aspect ratio */
+    display: block;   /* Prevents extra space below image */
+    cursor: pointer;
+}
+
+/* Remove h1 styles */
+header h1 {
+    display: none;
+}
+
+/* Main Container */
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    border-radius: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+#searchForm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: center;
+    position: relative; /* For absolute positioning of suggestions */
+}
+
+#searchForm label { /* Style the label */
+    margin-right: 5px; /* Add some spacing between label and input */
+    color: #fff;
+}
+
+#movieInput {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    min-width: 0;
+}
+
+#loader {
+    display: none;
+    text-align: center;
+    font-size: 18px;
+    color: #007bff;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+#searchButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#searchButton:hover {
+    background-color: #0056b3;
+}
+
+#resultsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Consolidated suggestions list styles */
+#suggestions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    width: calc(100% - 122px);
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    box-sizing: border-box;
+    top: 100%;
+    left: 72px;
+    background-color: white;
+}
+
+#suggestions li {
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+#suggestions li:hover {
+    background-color: #f0f0f0;
+}
+
+@media (prefers-color-scheme: dark) {
+    #suggestions {
+        background-color: #333;
+        border-color: #555;
+    }
+    #suggestions li:hover {
+        background-color: #444;
+    }
+    body {
+        color: #ddd;
+    }
+    #movieInput {
+        background-color: #333;
+        color: #eee;
+        border-color: #555;
+    }
+}
+
+.search-type-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    justify-content: center;
+}
+
+.search-type-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background-color: #eee;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.search-type-button.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.search-type-button:hover {
+    background-color: #ddd;
+}
+
+@media (prefers-color-scheme: dark) {
+    .search-type-button {
+        background-color: #333;
+        color: #e0e0e0;
+    }
+
+    .search-type-button.active {
+        background-color: #64b5f6;
+        color: #121212;
+    }
+
+    .search-type-button:hover {
+        background-color: #444;
+    }
+}
+
+.movieItem {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 25px;
+    align-items: flex-start;
+    background-color: rgba(30, 30, 47, 0.85);
+    border-radius: 10px; /* Added border-radius */
+}
+
+.movieItem img {
+    max-width: 200px;
+    height: auto;
+    border: 5px solid white;
+    box-sizing: border-box;
+    border-radius: 5px; /* Added border-radius */
+    opacity: 0; /* Initially hidden */
+    transition: opacity 0.5s ease-in-out; /* Smooth transition */
+}
+
+.movieItem img.loaded {
+    opacity: 1; /* Visible when loaded */
+	filter: none; /* Explicitly remove the filter */
+}
+
+.movieItem img.loading {
+    filter: blur(5px); /* Apply blur while loading */
+}
+
+.image-container {
+    flex: 0 0 200px;
+    margin-right: 20px;
+}
+
+.movieDetails {
+    flex: 1 1 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.movieDetails > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.movieDetails h2 {
+    color: #fff;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.movieDetails a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s; /* Add a smooth transition */
+}
+
+.movieDetails a:hover {
+    text-decoration: underline;
+    color: #64b5f6; /* Change color on hover */
+}
+
+.providersContainer {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.providersContainer img {
+    border: none;
+    box-sizing: content-box;
+    border-radius: 0;
+    max-height: 50px; /* Limit provider logo height */
+}
+
+.filmography-button,
+.load-more-button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 5px 0;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: background-color 0.3s ease;
+    /* Important: Add this to ensure they are inline and don't take full width */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filmography-button:hover,
+.load-more-button:hover {
+    background-color: #45a049;
+}
+
+/* More specific styling for the filmography buttons *within* movieDetails */
+.movieDetails .filmography-button {
+    align-self: flex-start; /* Align button to the start of the container */
+    margin-top: 10px;
+}
+
+/* Style for the load more button at the bottom of the results */
+.load-more-button {
+    width: fit-content; /* Make the button only as wide as its content */
+    margin: 20px auto; /* Center the button horizontally */
+    display: block;
+}
+@media (prefers-color-scheme: dark) {
+    .filmography-button,
+    .load-more-button {
+        background-color: #1565C0;
+    }
+    .filmography-button:hover,
+    .load-more-button:hover {
+        background-color: #0D47A1;
+    }
+}
