@@ -35,10 +35,23 @@ header {
 }
 
 #header-logo {
-    max-height: 60px; /* Set a maximum height for the logo */
-    width: auto;      /* Maintain aspect ratio */
-    display: block;   /* Prevents extra space below image */
+    max-height: 50px; /* Increased max-height slightly */
+    width: auto;
+    display: block;
     cursor: pointer;
+    max-width: 100%; /* Ensures the logo scales down */
+    height: auto;
+}
+
+@media (max-width: 768px) { /* Example breakpoint - adjust as needed */
+    #header-logo {
+        max-height: 60px; /* Smaller max-height on smaller screens */
+    }
+}
+@media (max-width: 480px) { /* Example breakpoint - adjust as needed */
+    #header-logo {
+        max-height: 40px; /* Smaller max-height on smaller screens */
+    }
 }
 
 /* Remove h1 styles */
