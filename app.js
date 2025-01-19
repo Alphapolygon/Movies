@@ -358,26 +358,44 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     const voteAverage = document.createElement('p');
     voteAverage.innerHTML = `Rating: ${item.vote_average ? item.vote_average.toFixed(1) + ' ⭐' : 'N/A'}`;
     column1.appendChild(voteAverage);
+	
 
-    const providersContainer = document.createElement('div');
-    providersContainer.classList.add('providersContainer');
-    if (item.watch && item.watch.flatrate) {
+const providersContainer = document.createElement('div');
+   if (item.watch && item.watch.flatrate) {
+        
+        providersContainer.classList.add('providersContainer');
+
         item.watch.flatrate.forEach(provider => {
-            const providerLink = document.createElement('a');
-            providerLink.href = item.watch.link || "#"; // Use the watch link or a fallback
-            providerLink.target = '_blank';
-            providerLink.rel = 'noopener noreferrer';
+            if (provider && provider.logo_path && provider.provider_name) { // Double check for data existence
+				const providerLink = document.createElement('a');
+				providerLink.href = item.watch.link || "#"; // Use the watch link or a fallback
+				providerLink.target = '_blank';
+				providerLink.rel = 'noopener noreferrer';
 
-            const providerImg = new Image();
-            providerImg.src = provider.logo_path ? `${ORIGINAL_IMAGE_BASE_URL}${provider.logo_path}` : 'default-provider-logo.png';
-            providerImg.alt = provider.provider_name;
-            providerImg.style.width = '50px';
+                const providerImg = new Image();
+                providerImg.alt = provider.provider_name;
+                providerImg.classList.add('loading');
 
-            providerLink.appendChild(providerImg);
-            providersContainer.appendChild(providerLink);
+                providerImg.onload = () => {
+                    providerImg.classList.remove('loading');
+                    providerImg.classList.add('loaded');
+                };
+                providerImg.onerror = () => {
+                    providerImg.src = 'default-provider-logo.png';
+                    providerImg.alt = `Logo for ${provider.provider_name} could not be loaded`;
+                    providerImg.classList.remove('loading');
+                    providerImg.classList.add('loaded');
+                };
+
+                providerImg.dataset.src = `https://image.tmdb.org/t/p/w92${provider.logo_path}`;
+                providerImg.src = provider.logo_path ? `${ORIGINAL_IMAGE_BASE_URL}${provider.logo_path}` : 'default-provider-logo.png';
+
+                providerLink.appendChild(providerImg);
+                providersContainer.appendChild(providerLink);
+            }
         });
+        
     }
-    column1.appendChild(providersContainer);
 
     try {
         const credits = await getCredits(item.id, isMovie);
@@ -418,7 +436,8 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
 
     detailsContainer.appendChild(column1);
     detailsContainer.appendChild(column2);
-     fragment.appendChild(detailsContainer); // Append details to fragment
+	detailsContainer.appendChild(providersContainer);
+    fragment.appendChild(detailsContainer); // Append details to fragment
     movieElement.appendChild(fragment); // Append fragment to movieElement
     container.appendChild(movieElement);
 }
@@ -673,12 +692,12 @@ function hideLoader() {
 }
 
 function lazyLoadImages() {
-    const images = document.querySelectorAll('.movieItem img.loading');
+    const images = document.querySelectorAll('.movieItem img.loading, .providersContainer img.loading');
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const img = entry.target;
-                img.src = img.src; // Force image load
+                img.src = img.dataset.src;
                 img.classList.remove('loading');
                 observer.unobserve(img);
             }
