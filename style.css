@@ -245,14 +245,16 @@ header h1 {
 }
 
 .movieDetails {
-    flex: 1 1 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+	
+	flex: 1 1 0;
+    display: flex; /* Changed to flex */
+    flex-direction: column; /* Added flex-direction: column */
     gap: 10px;
 }
 
 .movieDetails > div {
     display: flex;
+	
     flex-direction: column;
     gap: 5px;
 }

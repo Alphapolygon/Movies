@@ -533,6 +533,7 @@ async function displayActorResults(actors) {
                 await displayActorFilmography(actor.id, actor.name);
             }, FILMOGRAPHY_REQUEST_DELAY);
         });
+		
         detailsDiv.appendChild(filmographyButton);
 
         actorDiv.appendChild(detailsDiv);
@@ -540,7 +541,7 @@ async function displayActorResults(actors) {
     }
 
     resultsContainer.appendChild(fragment); // Append fragment to container
-    lazyLoadImages(); //Call lazy load function
+   
 }
 
 async function displayActorFilmography(actorId, actorName) {
