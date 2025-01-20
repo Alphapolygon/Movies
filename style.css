@@ -62,7 +62,7 @@ header h1 {
 /* Main Container - Fixed Width (Use with Caution!) */
 .container {
     max-width: 90%;
-	min-width: 50%;
+	
     margin: 40px auto;
     padding: 30px;
     background: rgba(255, 255, 255, 0.1);
