@@ -8,7 +8,7 @@
 body {
     font-family: 'Inter', sans-serif;
     background: linear-gradient(135deg, #1e1e2f, #2c2c44);
-    color: #eee; /* Changed to a lighter color for better contrast on the dark background */
+    color: #0e0f12; /* Changed to a lighter color for better contrast on the dark background */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -356,3 +356,63 @@ header h1 {
         background-color: #0D47A1;
     }
 }
+
+.movieDetails .trailer-button {
+    border: none;
+    border-radius: 5px;
+    background-color: #1565C0;
+
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex; /* Use inline-flex for better control */
+    align-items: center; /* Vertically center content */
+    justify-content: center; /* Horizontally center content */
+    font-size: 14px; /* Set a fixed font size */
+    padding: 6px 12px; /* Set fixed padding */
+    margin-top: 10px;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    min-width: 10px; /* Set a minimum width */
+	max-width: 80px; /* Set a minimum width */
+    height: 30px; /* Set a fixed height */
+}
+
+.movieDetails .trailer-button:hover {
+    background-color: rgba(0, 123, 255, 0.2);
+    color: white;
+}
+@media (prefers-color-scheme: dark) {
+    .movieDetails .trailer-button {
+		background-color:#1565C0;
+        color: #white;
+    }
+    .movieDetails .trailer-button:hover {
+        background-color:#1565C0;
+        color: gray;
+    }
+}
+.directorDetails {
+    display: block; /* Or display: flex; flex-direction: column; */
+    margin-top: 5px; /* Add some spacing above */
+}
+
+/* In style.css */
+.year-runtime {
+    white-space: nowrap; /* Prevent wrapping */
+    display: inline-flex; /* Use inline-flex to fix spacing issues */
+    align-items: center; /* Vertically align content */
+}
+
+.year-runtime span {
+    margin-left: 10px; /* Add space between year and runtime */
+}
+
+.year-runtime:empty {
+    display: none; /* Hide element if it is empty */
+}
+.button-container { /* New container for buttons */
+    display: flex;
+    gap: 5px; /* Adjust spacing between buttons */
+    margin-top: 10px;
+}
+

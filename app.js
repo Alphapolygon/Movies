@@ -420,27 +420,74 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     title.textContent = item.title || item.name;
     column1.appendChild(title);
 
-	const releaseDate = document.createElement('p');
-	const date = item.release_date || item.first_air_date;
+    let runtimeText = "";
 
-	if (date) {
-	  const year = new Date(date).getFullYear();
-	  releaseDate.textContent = `Release Year: ${year}`;
-	} else {
-	  releaseDate.textContent = "Release Year: N/A";
-	}
+	if (isMovie) {
+        if (item && item.runtime !== undefined && item.runtime !== null) { // Check if item and runtime exist and are not null
+            runtimeText = item.runtime + " min";
+        }
+    } else {
+        if (item && item.episode_run_time && item.episode_run_time.length > 0) { // Check if item, episode_run_time and length exist
+            runtimeText = item.episode_run_time[0] + " min/ep";
+        }
+    }
 
-	column1.appendChild(releaseDate);
+    let releaseYear = "";
+    if (item.release_date) {
+        releaseYear = new Date(item.release_date).getFullYear();
+    } else if (item.first_air_date) {
+        releaseYear = new Date(item.first_air_date).getFullYear();
+    }
+
+    const yearRuntimeDiv = document.createElement('div');
+    yearRuntimeDiv.classList.add('year-runtime');
+    yearRuntimeDiv.innerHTML = `${releaseYear ? releaseYear : ""}<span>${runtimeText}</span>`; // Added span
+    column1.appendChild(yearRuntimeDiv);
 
     const genreParagraph = document.createElement('p');
     genreParagraph.textContent = "Genres: ";
     const genreNames = await getGenreNames(item.genre_ids || item.genres?.map(g => g.id), isMovie); // Handle both genre_ids and full genre objects
-    genreParagraph.textContent += genreNames.length ? genreNames.join(", ") : "N/A";
+    genreParagraph.textContent = genreNames.length ? genreNames[0] : "N/A";
     column1.appendChild(genreParagraph);
 
     const voteAverage = document.createElement('p');
     voteAverage.innerHTML = `Rating: ${item.vote_average ? item.vote_average.toFixed(1) + ' ⭐' : 'N/A'}`;
     column1.appendChild(voteAverage);
+	
+	if (isMainItem && !isFromFilmography) {
+		
+		const buttonContainer = document.createElement('div'); // Create container
+        buttonContainer.classList.add('button-container');
+        try {
+            const videos = await getVideos(item.id, isMovie); // Use getVideos function
+			
+            if (videos && videos.results && videos.results.length > 0) {
+                const trailer = videos.results.find(video => video.type === "Trailer" && video.site === "YouTube"); // Find YouTube trailer
+				 if (trailer) {
+					const trailerLink = document.createElement('a');
+					trailerLink.href = `https://www.youtube.com/watch?v=${trailer.key}`; // Correct YouTube link
+					trailerLink.target = "_blank";
+					trailerLink.textContent = "Trailer";
+					trailerLink.classList.add('trailer-button'); // Add the class
+					buttonContainer.appendChild(trailerLink);
+				}
+            }	
+		
+			if (item.imdb_id) { // Use item.imdb_id directly
+                const imdbLink = document.createElement('a');
+                imdbLink.href = `https://www.imdb.com/title/${item.imdb_id}`;
+                imdbLink.target = "_blank";
+                imdbLink.textContent = "IMDb";
+                imdbLink.classList.add('trailer-button');
+                buttonContainer.appendChild(imdbLink);
+            }
+
+			column1.appendChild(buttonContainer);
+        } catch (error) {
+            console.error("Error fetching videos:", error);
+        }
+	
+	}
 	
 
 	const providersContainer = document.createElement('div');
@@ -485,19 +532,27 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
         if (credits && credits.crew) {
             const director = credits.crew.find(person => person.job === 'Director');
             if (director) {
+				const directorDetails = document.createElement('div');
+				directorDetails.classList.add('directorDetails');
+				
+				const directedByText = document.createElement('span');
+				directedByText.textContent = "DIRECTED BY: ";
+				directorDetails.appendChild(directedByText);
+				
                 const directorLink = document.createElement('a');
                 directorLink.href = '#';
-                directorLink.textContent = `Director: ${director.name}`;
+                directorLink.textContent = director.name;
                 directorLink.addEventListener('click', () => handlePersonClick(director.name, 'director', true));
-
-                column2.appendChild(directorLink);
+				directorDetails.appendChild(directorLink);
+				column2.appendChild(directorDetails);
+           
                 column2.appendChild(document.createElement('br'));
             }
         }
 
         if (credits && credits.cast && credits.cast.length > 0) {
             const castHeading = document.createElement('p');
-            castHeading.textContent = "Cast:";
+            castHeading.textContent = "CAST:";
             column2.appendChild(castHeading);
 
             const topCast = credits.cast.slice(0, 5);
@@ -524,6 +579,25 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     movieElement.appendChild(fragment); // Append fragment to movieElement
     container.appendChild(movieElement);
 }
+
+async function getVideos(itemId, isMovie) {
+    const mediaType = isMovie ? 'movie' : 'tv';
+    const url = `${BASE_API_URL}/${mediaType}/${itemId}/videos?api_key=${API_KEY}`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error fetching videos:", error);
+        return null;
+    }
+}
+
+
+
 
 async function getCredits(itemId, isMovie) {
     const type = isMovie ? 'movie' : 'tv';
