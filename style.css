@@ -59,15 +59,28 @@ header h1 {
     display: none;
 }
 
-/* Main Container */
+/* Main Container - Fixed Width (Use with Caution!) */
 .container {
-    max-width: 900px;
+    max-width: 60%;
+	min-width: 50%;
     margin: 40px auto;
     padding: 30px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(16px);
     border-radius: 20px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    overflow-x: auto; /* Add horizontal scroll if content overflows */
+}
+
+/* Media query for smaller screens - VERY IMPORTANT */
+@media (max-width: 600px) { /* Adjust breakpoint as needed */
+    .container {
+        width: 90%; /* Switch to a percentage width on smaller screens */
+        margin: 20px auto;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
 }
 
 #searchForm {
@@ -105,11 +118,11 @@ header h1 {
 
 #searchButton {
     padding: 10px 20px;
-    font-size: 16px;
+    font-size: 14px;
     background-color: #007bff;
     color: #fff;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     cursor: pointer;
 }
 
@@ -149,6 +162,13 @@ header h1 {
 #suggestions li:hover {
     background-color: #f0f0f0;
 }
+
+.suggestion-type {
+    font-size: small;
+    color: gray;
+    margin-left: 5px; /* Add some spacing between title and type hint */
+}
+
 
 @media (prefers-color-scheme: dark) {
     #suggestions {
@@ -206,6 +226,46 @@ header h1 {
     }
 
     .search-type-button:hover {
+        background-color: #444;
+    }
+}
+
+
+.topRatedbutton{
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background-color: #eee;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+	display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    justify-content: center;
+}
+
+.topRatedbutton.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.topRatedbutton:hover {
+    background-color: #ddd;
+}
+
+@media (prefers-color-scheme: dark) {
+    .topRatedbutton {
+        background-color: #333;
+        color: #e0e0e0;
+    }
+
+    .topRatedbutton.active {
+        background-color: #64b5f6;
+        color: #121212;
+    }
+
+    .topRatedbutton:hover {
         background-color: #444;
     }
 }
@@ -279,7 +339,9 @@ header h1 {
 .providersContainer {
     display: flex;
     flex-wrap: wrap;
+	flex-direction: column; /* Added flex-direction: column */
     gap: 10px;
+	max-width: 40px;
     margin-top: auto;
     align-items: left;
     justify-content: flex-start;
@@ -293,7 +355,7 @@ header h1 {
     max-height: 40px;
     width: auto;
     display: block;
-    max-width: 100%;
+    max-width: 40px;
     height: auto;
 	border: 0px;
     opacity: 0;
@@ -414,5 +476,28 @@ header h1 {
     display: flex;
     gap: 5px; /* Adjust spacing between buttons */
     margin-top: 10px;
+}
+
+.search-input-container {
+    display: flex; /* Use flexbox for horizontal layout */
+    align-items: center; /* Vertically align items */
+    width: 75%;
+}
+
+#searchType {
+    margin-right: 10px; /* Add some spacing between the select and input */
+    padding: 8px; /* Add some padding to the select */
+    border: 0px ;
+    border-radius: 10px;
+    appearance: none; /* Remove default select styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: rgba(130, 150, 177, 0.85);
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>"); /* Add arrow icon */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px; /* Adjust padding to make space for arrow */
+	color: white;
 }
 

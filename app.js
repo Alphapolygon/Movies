@@ -19,15 +19,16 @@ const resultsContainer = document.getElementById('resultsContainer');
 const loader = document.getElementById('loader');
 
 
-
+  
 function setupTypeButtons() {
     const buttons = document.querySelectorAll('.search-type-button');
+	
     buttons.forEach(button => {
         button.addEventListener('click', () => {
             buttons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             currentSearchType = button.dataset.type;
-            searchContent();
+           // searchContent();
         });
     });
 }
@@ -79,18 +80,33 @@ async function fetchData(url) {
 }
 
 // Reusable function for handling item/person clicks
-async function handleItemOrPersonClick(name, searchType, isMovie) {
+async function handleItemOrPersonClick(name, searchTypes, isMovie) {
+	
+	const type = isMovie ? 'movie' : 'tv';
+	
     movieInput.value = name;
     const buttons = document.querySelectorAll('.search-type-button');
     buttons.forEach(btn => btn.classList.remove('active'));
+	if(isMovie){
+		currentSearchType = 'movie';
+		searchType.value = 'movie';
+	}else{
+		currentSearchType = 'tv';
+		searchType.value = 'tv';
+	}
+	
     const targetButton = document.querySelector(`.search-type-button[data-type="${searchType}"]`);
     if (targetButton) {
         targetButton.classList.add('active');
-        currentSearchType = searchType;
-    }
+       // currentSearchType = searchTypes;
+    }	
     await searchContent();
 }
 
+searchType.addEventListener('change', () => {
+    currentSearchType = searchType.value;
+   
+});
 
 // ... (getMovieSuggestions, detectUserRegion, setupTypeButtons remain mostly the same)
 
@@ -188,7 +204,7 @@ async function getItemId(type, query) {
 }
 
 async function getSimilarItems(type, itemId) {
-    const url = `${BASE_API_URL}/${type}/${itemId}/recommendations?api_key=${API_KEY}&language=en-US&page=1`;
+    const url = `${BASE_API_URL}/${type}/${itemId}/recommendations?api_key=${API_KEY}&page=1`;
     return (await fetchData(url))?.results || [];
 }
 
@@ -216,7 +232,7 @@ async function searchActors(actorName) {
 }
 
 async function fetchAndDisplayPopularMovies() {
-    const url = `${BASE_API_URL}/discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&page=1`;
+    const url = `${BASE_API_URL}/discover/movie?api_key=${API_KEY}&sort_by=popularity.desc&page=1`;
 
     try {
         const data = await fetchData(url);
@@ -232,7 +248,7 @@ async function fetchAndDisplayPopularMovies() {
           return {...movie, watch: getWatchData(providers)};
         }));
 
-        displayPopular(popularMoviesWithProviders);
+        displayPopular(popularMoviesWithProviders, true);
     } catch (error) {
         console.error("Error fetching popular movies:", error);
     } finally {
@@ -240,11 +256,17 @@ async function fetchAndDisplayPopularMovies() {
     }
 }
 
-function displayPopular(movies) {
+async function displayPopular(movies, isMovie = true) {
+	await  detectUserRegion();
     resultsContainer.innerHTML = ''; // Clear previous results
 
     movies.forEach(movie => {
-        displayItem(movie, true, resultsContainer, true);
+		if (isMovie) {
+			displayItem(movie, true, resultsContainer, true);
+		} else {
+			displayItem(movie, false, resultsContainer, true);
+		}
+        
     });
 }
 
@@ -305,44 +327,83 @@ async function displayDirectorResults(directors) {
     requestAnimationFrame(lazyLoadImages);
 }
 
+const topRatedButton = document.getElementById('topRatedButton');
+const topRatedTVShowsButton = document.getElementById('topRatedTVShowsButton');
+let currentTopRatedPage = 1;
+let totalTopRatedPages = 10;
 
-
-async function displayResults(results, isMovie) {
+topRatedTVShowsButton.addEventListener('click', () => {
+    currentSearchType = 'tv';
+    currentTopRatedPage = 1;
     resultsContainer.innerHTML = '';
+    loadTopRatedMovies(false);
+    //Deactivate other buttons
+    const buttons = document.querySelectorAll('.topRatedbutton');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    topRatedTVShowsButton.classList.add('active')
+});
 
-    if (!results) {
-        alert("No results to display.");
-        return;
-    }
+topRatedButton.addEventListener('click', () => {
+    currentSearchType = 'movies';
+    currentTopRatedPage = 1;
+    resultsContainer.innerHTML = '';
+    loadTopRatedMovies(true);
+    //Deactivate other buttons
+    const buttons = document.querySelectorAll('.topRatedbuttonn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    topRatedButton.classList.add('active')
+});
 
-    const { searchedItem, similarItems } = results;
 
-    try {
-        if (searchedItem) {
-            displayItem(searchedItem, isMovie, resultsContainer, true);
-            await delay(1000); // Delay before showing similar items
+async function loadTopRatedMovies(isMovie = true) {
+  showLoader();
+
+  let url = '';
+  if (isMovie) {
+    url = `${BASE_API_URL}/movie/top_rated?api_key=${API_KEY}`;
+  } else {
+    url = `${BASE_API_URL}/tv/top_rated?api_key=${API_KEY}`;
+  }
+
+  try {
+    const data = await fetchData(url);
+
+    if (data && data.results && data.results.length > 0) {
+      totalTopRatedPages = data.total_pages;
+      const popularMovies = data.results.slice(0, 20).map(movie => ({ ...movie, isPopular: true }));
+
+      const popularMoviesWithProviders = await Promise.all(popularMovies.map(async (movie) => {
+        let providers = '';
+        try {
+          providers = await getWatchProviders(movie.id, isMovie ? 'movie' : 'tv');
+        } catch (error) {
+          console.warn(`Error fetching watch providers for ${movie.title || movie.name}:`, error);
+          // You might want to return a placeholder object here (e.g., { watch: {} })
         }
+        // Assuming getWatchData extracts relevant data from providers
+        return { ...movie, watch: getWatchData(providers) };
+      }));
 
-        if (similarItems && similarItems.length > 0) {
-            const separatorRow = document.createElement('div');
-            separatorRow.classList.add('separator-row');
-            separatorRow.textContent = `People who watched ${searchedItem.title || searchedItem.name} also watched:`;
-            resultsContainer.appendChild(separatorRow);
+      // Check if any entries in popularMoviesWithProviders have missing data
+      const validMovies = popularMoviesWithProviders.filter(movie => movie.watch); // Filter out movies with missing watch data
 
-            similarItems.forEach(item => {
-                displayItem(item, item.media_type === 'movie', resultsContainer, false);
-            });
-        }
-    } catch (error) {
-        console.error("Error displaying results:", error);
-        alert("An error occurred displaying the results.");
+      if (validMovies.length > 0) {
+        displayPopular(validMovies, isMovie);
+      } else {
+        resultsContainer.innerHTML = '<p>No results found with watch provider information.</p>';
+      }
+    } else {
+      resultsContainer.innerHTML = '<p>No top rated movies found.</p>';
     }
+  } catch (error) {
+    console.error('Error fetching top rated movies:', error);
+    resultsContainer.innerHTML = '<p>Error fetching top rated movies.</p>';
+  } finally {
+    hideLoader();
+  }
 }
 
 
-// ... (fetchAndDisplayPopularMovies remains mostly the same, but use fetchData)
-
-// ... (displayResults, displayItem, displayActorResults, displayActorFilmography, getActorCredits remain mostly the same, but use fetchData and helper functions)
 
 async function displayResults(results, isMovie) {
     resultsContainer.innerHTML = '';
@@ -386,6 +447,7 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     imageContainer.classList.add('image-container');
     const imgLink = document.createElement('a');
     imgLink.href = '#';
+	console.log(`handleItemOrPersonClick: ${isMovie ? 'movie' : 'tv'}`);
     imgLink.addEventListener('click', () => handleItemOrPersonClick(item.title || item.name, isMovie ? 'movie' : 'tv', isMovie));
 
     const img = new Image();
@@ -459,10 +521,13 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
 		const buttonContainer = document.createElement('div'); // Create container
         buttonContainer.classList.add('button-container');
         try {
-            const videos = await getVideos(item.id, isMovie); // Use getVideos function
 			
-            if (videos && videos.results && videos.results.length > 0) {
-                const trailer = videos.results.find(video => video.type === "Trailer" && video.site === "YouTube"); // Find YouTube trailer
+			const videos = await getVideos(item.id, isMovie );
+
+		
+			 if (videos && videos.results && videos.results.length > 0) {
+				const trailer = videos.results.find(video => video.type === "Trailer" && video.site === "YouTube"); // Find YouTube trailer
+				
 				 if (trailer) {
 					const trailerLink = document.createElement('a');
 					trailerLink.href = `https://www.youtube.com/watch?v=${trailer.key}`; // Correct YouTube link
@@ -471,8 +536,9 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
 					trailerLink.classList.add('trailer-button'); // Add the class
 					buttonContainer.appendChild(trailerLink);
 				}
-            }	
-		
+			 }
+			
+					
 			if (item.imdb_id) { // Use item.imdb_id directly
                 const imdbLink = document.createElement('a');
                 imdbLink.href = `https://www.imdb.com/title/${item.imdb_id}`;
@@ -529,7 +595,7 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
 
     try {
         const credits = await getCredits(item.id, isMovie);
-        if (credits && credits.crew) {
+        if (credits && credits.crew && credits.crew.length > 0) {
             const director = credits.crew.find(person => person.job === 'Director');
             if (director) {
 				const directorDetails = document.createElement('div');
@@ -559,7 +625,7 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
             topCast.forEach(actor => {
                 const actorLink = document.createElement('a');
                 actorLink.href = '#';
-                actorLink.textContent = actor.name;
+                actorLink.textContent = actor.name;				
                 actorLink.addEventListener('click', () => handlePersonClick(actor.name, "actor"));
                 column2.appendChild(actorLink);
                
@@ -581,21 +647,28 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
 }
 
 async function getVideos(itemId, isMovie) {
+	
     const mediaType = isMovie ? 'movie' : 'tv';
-    const url = `${BASE_API_URL}/${mediaType}/${itemId}/videos?api_key=${API_KEY}`;
+	
+    const url = `${BASE_API_URL}/${mediaType}/${itemId}/videos?api_key=${API_KEY}&language=en-US`;
+   
+
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
+            if (response.status === 404) {
+                console.warn(`No videos found for ${mediaType} with ID ${itemId}. Returning empty results.`);
+                return { results: [] }; // Correct: Return an object with empty results
+            }
+            throw new Error(`HTTP error ${response.status} fetching videos.`);
         }
         const data = await response.json();
-        return data;
+        return data; // Correct: Return the entire data object
     } catch (error) {
         console.error("Error fetching videos:", error);
-        return null;
+        return { results: [] }; // Correct: Return an object with empty results on error
     }
 }
-
 
 
 
@@ -632,24 +705,24 @@ async function getGenreNames(genreIds, isMovie) {
     return genreIds.map(id => allGenresCache[id]?.name).filter(name => name);
 }
 
-async function handlePersonClick(personName, searchType) {
+async function handlePersonClick(personName, searchTypes) {
 
     movieInput.value = personName;
-
+	
     const buttons = document.querySelectorAll('.search-type-button');
 
     buttons.forEach(btn => btn.classList.remove('active'));
 
-    const targetButton = document.querySelector(`.search-type-button[data-type="${searchType}"]`);
+    const targetButton = document.querySelector(`.search-type-button[data-type="${searchTypes}"]`);
 
     if (targetButton) {
 
         targetButton.classList.add('active');
 
-        currentSearchType = searchType;
-
+        currentSearchType = searchTypes;		
     }
-
+	searchType.value = searchTypes;
+	currentSearchType = searchTypes;	
     searchContent();
 
 }
@@ -793,7 +866,10 @@ async function displayActorFilmography(actorId, actorName, isDirector = false) {
             const loadMoreButton = document.createElement('button');
             loadMoreButton.textContent = 'Load More';
             loadMoreButton.classList.add('filmography-button', 'load-more-button'); // Combined classes
-            loadMoreButton.addEventListener('click', displayNextCredits);
+            loadMoreButton.addEventListener('click',  () => {
+				currentTopRatedPage++;
+				displayNextCredits();
+			});
             resultsContainer.appendChild(loadMoreButton);
 
         } else {
@@ -905,15 +981,41 @@ movieInput.addEventListener('input', () => {
         const suggestions = await getMovieSuggestions(query);
         suggestionsList.innerHTML = '';
         if (suggestions && suggestions.length > 0) {
-            suggestions.forEach(suggestion => {
-                const li = document.createElement('li');
-                li.textContent = suggestion.title || suggestion.name;
-                li.addEventListener('click', () => {
-                    movieInput.value = suggestion.title || suggestion.name;
-                    suggestionsList.innerHTML = '';
-                });
-                suggestionsList.appendChild(li);
-            });
+			suggestions.forEach(suggestion => {
+			let title = suggestion.title || suggestion.name;
+			if (!title) return;
+
+			let typeHint = '';
+			let year = '';
+
+			switch (suggestion.media_type) {
+				case 'movie':
+					typeHint = '(Movie)';
+					currentSearchType = 'movie';				    
+					year = suggestion.release_date ? ` (${suggestion.release_date.substring(0, 4)})` : '';
+					break;
+				case 'tv':
+					typeHint = '(TV Show)';
+					currentSearchType = 'tv';
+					year = suggestion.first_air_date ? ` (${suggestion.first_air_date.substring(0, 4)})` : '';
+					break;
+				case 'person':
+					typeHint = `(${suggestion.known_for_department || 'Person'})`;
+					currentSearchType ='actor';
+					break;
+				default:
+					typeHint = '(Unknown)';
+			}
+			searchType.value = currentSearchType;
+			const li = document.createElement('li');
+			li.innerHTML = `${title} <span class="suggestion-type">${typeHint}${year}</span>`;
+			li.addEventListener('click', () => {
+				movieInput.value = title;
+				suggestionsList.innerHTML = '';
+				searchContent();
+			});
+			suggestionsList.appendChild(li);
+			});
         } else {
             const li = document.createElement('li');
             li.textContent = "No result found";
@@ -940,6 +1042,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     await fetchAndDisplayPopularMovies();
     setupTypeButtons();
 });
+
+
 
 //Helper function to delay execution
 const delay = ms => new Promise(res => setTimeout(res, ms)); // Delay function

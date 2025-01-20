@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What To Watch Next</title>
     <link rel="stylesheet" href="style.css">
-	<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
-	<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-	<link rel="shortcut icon" href="/favicon.ico" />
-	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-	<meta name="apple-mobile-web-app-title" content="What To Watch Next" />
-	<link rel="manifest" href="/site.webmanifest" />
-	
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="What To Watch Next" />
+    <link rel="manifest" href="/site.webmanifest" />
 </head>
 <body>
     <header>
@@ -19,15 +18,21 @@
     </header>
     <div class="container">
         <div class="search-type-buttons">
-            <button class="search-type-button active" data-type="movie">Movies</button>
-            <button class="search-type-button" data-type="tv">TV Shows</button>
-            <button class="search-type-button" data-type="actor">Actors</button>
-			  <button class="search-type-button" data-type="director">Directors</button>
+			<button class="search-type-button " id="topRatedButton">Top Rated Movies</button>   
+			<button class="search-type-button " id="topRatedTVShowsButton">Top Rated TV Shows</button>
+			        
         </div>
+		
         <form id="searchForm">
-            <label for="movieInput">Search:</label>
-            <input type="text" id="movieInput" placeholder="Enter a movie or TV show name..." autocomplete="off">
-            <ul id="suggestions"></ul>
+            <div class="search-input-container"> <select id="searchType">                
+                <option value="movie">Movies</option>
+                <option value="tv">TV Shows</option>
+                <option value="actor">Actors</option>
+				<option value="director">Directors</option>
+            </select>
+                <input type="text" id="movieInput" placeholder="Enter a movie or TV show name..." autocomplete="off">
+                <ul id="suggestions"></ul>
+            </div>
             <button id="searchButton" type="submit" aria-label="Submit Search">Search</button>
         </form>
         <div id="loader">SEARCHING...</div>
