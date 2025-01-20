@@ -61,7 +61,7 @@ header h1 {
 
 /* Main Container - Fixed Width (Use with Caution!) */
 .container {
-    max-width: 60%;
+    max-width: 90%;
 	min-width: 50%;
     margin: 40px auto;
     padding: 30px;
@@ -73,15 +73,7 @@ header h1 {
 }
 
 /* Media query for smaller screens - VERY IMPORTANT */
-@media (max-width: 600px) { /* Adjust breakpoint as needed */
-    .container {
-        width: 90%; /* Switch to a percentage width on smaller screens */
-        margin: 20px auto;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-}
+
 
 #searchForm {
     display: flex;
