@@ -771,18 +771,22 @@ async function displayActorFilmography(actorId, actorName, isDirector = false) {
                 }
             }));
 
-            // Sort with provider priority
-            filmographyWithProviders.sort((a, b) => {
-                const aHasProviders = a.watch && a.watch.flatrate && a.watch.flatrate.length > 0;
-                const bHasProviders = b.watch && b.watch.flatrate && b.watch.flatrate.length > 0;
-                const dateA = new Date(a.release_date || a.first_air_date || 0);
-                const dateB = new Date(b.release_date || b.first_air_date || 0);
+			filmographyWithProviders.sort((a, b) => {
+				let dateA = a.release_date || a.first_air_date;
+				let dateB = b.release_date || b.first_air_date;
 
-                if (aHasProviders && !bHasProviders) return -1;
-                if (!aHasProviders && bHasProviders) return 1;
+				if (!dateA && !dateB) return 0;
+				if (!dateA) return 1;
+				if (!dateB) return -1;
 
-                return dateB - dateA;
-            });
+				// Extract year for consistent comparison
+				const yearA = dateA.substring(0, 4); // Extract the year
+				const yearB = dateB.substring(0, 4); // Extract the year
+
+				if (isNaN(yearA) || isNaN(yearB)) return 0; // Handle cases where year extraction fails
+
+				return parseInt(yearB) - parseInt(yearA); // Compare years as numbers for descending order
+			});
 
             displayNextCredits();
 
