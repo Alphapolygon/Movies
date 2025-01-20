@@ -92,7 +92,7 @@ header h1 {
 
 #movieInput {
     flex: 3 1 auto; /* Allow input to grow and shrink more than select */
-    min-width: 220px;
+    min-width: 180px;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
