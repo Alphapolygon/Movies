@@ -92,12 +92,12 @@ header h1 {
 
 #movieInput {
     flex: 3 1 auto; /* Allow input to grow and shrink more than select */
-    min-width: 0;
+    min-width: 220px;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
     box-sizing: border-box; /* Include padding and border in element's total width and height */
-	width: calc(100% - 122px);
+	
 }
 
 /* Media query for larger screens (optional) */
