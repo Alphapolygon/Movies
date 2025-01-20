@@ -61,8 +61,7 @@ header h1 {
 
 /* Main Container - Fixed Width (Use with Caution!) */
 .container {
-    max-width: 90%;
-	
+    max-width: 90%;	
     margin: 40px auto;
     padding: 30px;
     background: rgba(255, 255, 255, 0.1);
@@ -76,13 +75,14 @@ header h1 {
 
 
 #searchForm {
+    max-width: 100%;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     margin-bottom: 20px;
     align-items: center;
-    justify-content: center;
-    position: relative; /* For absolute positioning of suggestions */
+    
+    position: relative;
 }
 
 #searchForm label { /* Style the label */
@@ -91,12 +91,21 @@ header h1 {
 }
 
 #movieInput {
-    flex-grow: 1;
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    flex: 3 1 auto; /* Allow input to grow and shrink more than select */
     min-width: 0;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
+	width: calc(100% - 122px);
+}
+
+/* Media query for larger screens (optional) */
+@media (min-width: 768px) {
+    #searchForm {
+        justify-content: center; /* Align items to the left on larger screens */
+    }
+ 
 }
 
 #loader {
@@ -109,13 +118,13 @@ header h1 {
 }
 
 #searchButton {
-    padding: 10px 20px;
-    font-size: 14px;
-    background-color: #007bff;
-    color: #fff;
+    padding: 8px 16px;
     border: none;
-    border-radius: 10px;
+    border-radius: 5px;
+    background-color: #007bff; /* Example color */
+    color: white;
     cursor: pointer;
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
 }
 
 #searchButton:hover {
@@ -477,6 +486,8 @@ header h1 {
 }
 
 #searchType {
+	flex: 1 0 auto; /* Allow the select to shrink if needed */
+    min-width: fit-content;
     margin-right: 10px; /* Add some spacing between the select and input */
     padding: 8px; /* Add some padding to the select */
     border: 0px ;
@@ -489,7 +500,7 @@ header h1 {
     background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>"); /* Add arrow icon */
     background-repeat: no-repeat;
     background-position: right 10px center;
-    padding-right: 30px; /* Adjust padding to make space for arrow */
+    padding-right: 20px; /* Adjust padding to make space for arrow */
 	color: white;
 }
 
