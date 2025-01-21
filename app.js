@@ -241,7 +241,7 @@ async function fetchAndDisplayPopularMovies() {
           return;
         }
         // Add isPopular property and CAP to 10
-        const popularMovies = data.results.slice(0, 10).map(movie => ({ ...movie, isPopular: true }));
+        const popularMovies = data.results.slice(0, 20).map(movie => ({ ...movie, isPopular: true }));
 
         const popularMoviesWithProviders = await Promise.all(popularMovies.map(async (movie) => {
           const providers = await getWatchProviders(movie.id, 'movie');
@@ -259,15 +259,8 @@ async function fetchAndDisplayPopularMovies() {
 async function displayPopular(movies, isMovie = true) {
 	await  detectUserRegion();
     resultsContainer.innerHTML = ''; // Clear previous results
-
-    movies.forEach(movie => {
-		if (isMovie) {
-			displayItem(movie, true, resultsContainer, true);
-		} else {
-			displayItem(movie, false, resultsContainer, true);
-		}
-        
-    });
+	displayTopRatedResults(movies, isMovie, currentPage = 1, totalPages = 1);
+ 
 }
 
 async function displayDirectorResults(directors) {
