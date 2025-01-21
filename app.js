@@ -388,7 +388,7 @@ async function loadTopRatedMovies(isMovie = true) {
       const validMovies = popularMoviesWithProviders.filter(movie => movie.watch); // Filter out movies with missing watch data
 
       if (validMovies.length > 0) {
-        displayPopular(validMovies, isMovie);
+        displayTopRatedResults(validMovies, isMovie);
       } else {
         resultsContainer.innerHTML = '<p>No results found with watch provider information.</p>';
       }
@@ -726,6 +726,81 @@ async function handlePersonClick(personName, searchTypes) {
     searchContent();
 
 }
+
+async function displayTopRatedResults(videos, isMovie) {
+  resultsContainer.innerHTML = '';
+
+  const fragment = document.createDocumentFragment(); // Use a DocumentFragment
+
+  let row = document.createElement('div'); // Create a row container
+  row.classList.add('movie-row'); // Add a class name for styling
+
+  for (let i = 0; i < videos.length; i++) {
+    const item = videos[i];
+
+    const imageContainer = document.createElement('div');
+    imageContainer.classList.add('movieDetails');
+    const imgLink = document.createElement('a');
+    imgLink.href = '#';
+    console.log(`handleItemOrPersonClick: ${isMovie ? 'movie' : 'tv'}`);
+    imgLink.addEventListener('click', () => handleItemOrPersonClick(item.title || item.name, isMovie ? 'movie' : 'tv', isMovie));
+
+    const img = new Image();
+    img.onload = () => {
+      img.classList.remove('loading'); // Remove loading class when loaded
+      img.classList.add('loaded');
+    };
+    img.onerror = () => {
+      img.src = 'placeholder.jpg';
+      img.alt = "Image could not be loaded";
+      img.classList.remove('loading'); // Remove loading class even on error
+      img.classList.add('loaded'); // Add loaded class in case of error to prevent further attempts
+    };
+    img.src = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'placeholder.jpg';
+
+    img.alt = item.title || item.name;
+    img.classList.add('loading'); // Add loading class initially
+
+    imgLink.appendChild(img);
+    imageContainer.appendChild(imgLink);
+
+    const detailsDiv = document.createElement('div');
+  //  detailsDiv.classList.add('movieDetails');
+
+    const nameHeading = document.createElement('a');
+    nameHeading.textContent = isMovie ? item.title : item.name;
+    detailsDiv.appendChild(nameHeading);
+	
+	
+	let releaseYear = "";
+    if (item.release_date) {
+        releaseYear = new Date(item.release_date).getFullYear();
+    } else if (item.first_air_date) {
+        releaseYear = new Date(item.first_air_date).getFullYear();
+    }
+    
+	const yearHeading = document.createElement('a');
+    yearHeading.classList.add('a');
+    yearHeading.innerHTML = `(${releaseYear ? releaseYear : ""})  <span>${item.vote_average ? item.vote_average.toFixed(1) + ' ⭐' : 'N/A'}</span> `; // Added span
+    detailsDiv.appendChild(yearHeading);
+
+	
+    imageContainer.appendChild(detailsDiv);
+
+    // Add the imageContainer to the row
+    row.appendChild(imageContainer);
+
+    // Check if we have 4 movies in the row, if so append the row to fragment and create a new row
+    if ((i + 1) % 4 === 0 || i === videos.length - 1) {
+      fragment.appendChild(row);
+      row = document.createElement('div'); // Create a new row container
+      row.classList.add('movie-row'); // Add a class name for styling
+    }
+  }
+
+  resultsContainer.appendChild(fragment); // Append fragment to container
+}
+
 
 async function displayActorResults(actors) {
     resultsContainer.innerHTML = '';
