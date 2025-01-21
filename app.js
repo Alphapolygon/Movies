@@ -3,7 +3,7 @@ const BASE_API_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w200';
 const ORIGINAL_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const FILMOGRAPHY_REQUEST_DELAY = 1000;
-const CREDITS_PER_PAGE = 10;
+const CREDITS_PER_PAGE = 20;
 let currentSearchType = 'movie';
 let userRegion = 'US';
 let filmographyRequestTimer;
@@ -475,6 +475,7 @@ async function displayItem(item, isMovie, container, isMainItem, isFromFilmograp
     const column1 = document.createElement('div');
     const column2 = document.createElement('div');
 
+
     const title = document.createElement('h2');
     title.textContent = item.title || item.name;
     column1.appendChild(title);
@@ -896,6 +897,7 @@ async function displayActorResults(actors) {
 
             filmographyRequestTimer = setTimeout(async () => {
                 filmographyRequestTimer = null;
+
                 await displayActorFilmography(actor.id, actor.name, false); // isDirector = false for actors
             }, FILMOGRAPHY_REQUEST_DELAY);
         });
@@ -912,18 +914,19 @@ async function displayActorResults(actors) {
 
 async function displayActorFilmography(actorId, actorName, isDirector = false) {
     resultsContainer.innerHTML = '';
-	showLoader(); // Show the loader *before* fetching data
+    showLoader();
 
     let allCredits = [];
-	let DirectorCredits = [];
-    let currentStartIndex = 0;
     let filmographyWithProviders = [];
+    let currentPage = 1;
+    const CREDITS_PER_PAGE = 20;
 
     try {
-        const credits = await getActorCredits(actorId);
+        const credits = await getActorCredits(actorId, currentPage);
+
         if (credits && credits.cast) {
             allCredits = [...credits.cast, ...credits.crew];
-            //Make credits unique based on id
+
             const uniqueCredits = [];
             const seenIds = new Set();
             for (const credit of allCredits) {
@@ -933,107 +936,213 @@ async function displayActorFilmography(actorId, actorName, isDirector = false) {
                 }
             }
             allCredits = uniqueCredits;
-			
+
             if (allCredits.length === 0) {
-                const noResultsMessage = document.createElement("p");
-                noResultsMessage.textContent = `No filmography found for ${actorName}`;
-                resultsContainer.appendChild(noResultsMessage);
+                resultsContainer.innerHTML = `<p>No filmography found for ${actorName}.</p>`;
                 return;
             }
-			
-			let filteredCredits;
-			if (isDirector) {
-				filteredCredits = allCredits.filter(credit => credit.job === "Director" && credit.media_type === "movie");
-				if (filteredCredits.length === 0) {
-					resultsContainer.innerHTML = `<p>No directed movies found for ${actorName}.</p>`;
-					return;
-				}
-			} else {
-				filteredCredits = allCredits.filter(credit => credit.media_type === "movie");
-				if (filteredCredits.length === 0) {
-					resultsContainer.innerHTML = `<p>No acted in movies found for ${actorName}.</p>`;
-					return;
-				}
-			}
-			
-			const uniqueCredits2 = Array.from(new Set(filteredCredits.map(JSON.stringify))).map(JSON.parse);
-	
+
+            let filteredCredits;
+            if (isDirector) {
+                filteredCredits = allCredits.filter(credit => credit.job === "Director" && credit.media_type === "movie");
+                if (filteredCredits.length === 0) {
+                    resultsContainer.innerHTML = `<p>No directed movies found for ${actorName}.</p>`;
+                    return;
+                }
+            } else {
+                filteredCredits = allCredits.filter(credit => credit.media_type === "movie");
+                if (filteredCredits.length === 0) {
+                    resultsContainer.innerHTML = `<p>No acted in movies found for ${actorName}.</p>`;
+                    return;
+                }
+            }
+
+            const uniqueCredits2 = Array.from(new Set(filteredCredits.map(JSON.stringify))).map(JSON.parse);
+
             filmographyWithProviders = await Promise.all(uniqueCredits2.map(async (item) => {
                 try {
                     const isMovie = item.media_type === 'movie';
                     const providers = await getWatchProviders(item.id, item.media_type);
-                    item.watch = getWatchData(providers);
-                    return item;
+                    return { ...item, watch: getWatchData(providers) };
                 } catch (error) {
-                    console.error("Error fetching providers for filmography item:", error);
+                    console.warn("Error fetching providers for filmography item:", error);
                     return { ...item, watch: null };
                 }
             }));
-
+			
 			filmographyWithProviders.sort((a, b) => {
-				let dateA = a.release_date || a.first_air_date;
-				let dateB = b.release_date || b.first_air_date;
+				const getYear = (item) => {
+					const dateString = item.release_date || item.first_air_date;
+					if (!dateString) return null;
 
-				if (!dateA && !dateB) return 0;
-				if (!dateA) return 1;
-				if (!dateB) return -1;
+					const date = new Date(dateString);
+					return isNaN(date.getFullYear()) ? null : date.getFullYear();
+				};
 
-				// Extract year for consistent comparison
-				const yearA = dateA.substring(0, 4); // Extract the year
-				const yearB = dateB.substring(0, 4); // Extract the year
+				const yearA = getYear(a);
+				const yearB = getYear(b);
 
-				if (isNaN(yearA) || isNaN(yearB)) return 0; // Handle cases where year extraction fails
+				if (yearB === null && yearA === null) return 0; // Both no year
+				if (yearB === null) return -1; // b no year, a has
+				if (yearA === null) return 1; // a no year, b has
 
-				return parseInt(yearB) - parseInt(yearA); // Compare years as numbers for descending order
+				return yearB - yearA; // Descending order (newest first)
 			});
+			
 
-            displayNextCredits();
-
-            const loadMoreButton = document.createElement('button');
-            loadMoreButton.textContent = 'Load More';
-            loadMoreButton.classList.add('filmography-button', 'load-more-button'); // Combined classes
-            loadMoreButton.addEventListener('click',  () => {
-				currentTopRatedPage++;
-				displayNextCredits();
-			});
-            resultsContainer.appendChild(loadMoreButton);
+            displayFilmographyPage(filmographyWithProviders, currentPage);
 
         } else {
-            alert("Could not retrieve filmography.");
+            resultsContainer.innerHTML = `<p>Could not retrieve filmography for ${actorName}.</p>`;
         }
     } catch (error) {
         console.error("Error fetching actor credits:", error);
-        alert("An error occurred fetching filmography.");
-     } finally {
-        hideLoader();//Hide the loader even if there is an error
-    }
-	
-
-    function displayNextCredits() {
-        const nextCredits = filmographyWithProviders.slice(currentStartIndex, currentStartIndex + CREDITS_PER_PAGE);
-        if (nextCredits.length === 0) {
-            const loadMoreButton = document.querySelector(".load-more-button");
-            if (loadMoreButton) loadMoreButton.remove();
-            return;
-        }
-
-        const tempContainer = document.createElement('div');
-        nextCredits.forEach(credit => {
-            displayItem(credit, credit.media_type === 'movie', tempContainer, false, true);
-        });
-        resultsContainer.insertBefore(tempContainer, document.querySelector(".load-more-button"));
-        currentStartIndex += CREDITS_PER_PAGE;
-
-        if (currentStartIndex >= filmographyWithProviders.length) {
-            const loadMoreButton = document.querySelector(".load-more-button");
-            if (loadMoreButton) loadMoreButton.remove();
-        }
+        resultsContainer.innerHTML = `<p>An error occurred fetching filmography for ${actorName}.</p>`;
+    } finally {
+        hideLoader();
     }
 }
 
-async function getActorCredits(actorId) {
-    const cacheKey = `${BASE_API_URL}/person/${actorId}/combined_credits?api_key=${API_KEY}`;
-    
+async function displayFilmographyPage(filmography, currentPage=1) {
+    let row = resultsContainer.querySelector('.movie-row:last-child');
+    if (!row) {
+        row = document.createElement('div');
+        row.classList.add('movie-row');
+        resultsContainer.appendChild(row);
+    }
+
+    const startIndex = (currentPage - 1) * CREDITS_PER_PAGE;
+    const endIndex = Math.min(startIndex + CREDITS_PER_PAGE, filmography.length);
+    const currentFilmographyPage = filmography.slice(startIndex, endIndex);
+
+    const fragment = document.createDocumentFragment();
+
+    for (const item of currentFilmographyPage) {
+        const movieElement = document.createElement('div');
+        
+             movieElement.classList.add('movie-row-item');
+	
+			const imageContainer = document.createElement('div');
+			
+			const imgLink = document.createElement('a');
+			imgLink.href = '#';
+			
+			const isMovie = item.media_type ? 'movie' : 'tv'
+			console.log(`handleItemOrPersonClick: ${isMovie ? 'movie' : 'tv'}`);
+			imgLink.addEventListener('click', () => handleItemOrPersonClick(item.title || item.name, isMovie ? 'movie' : 'tv', isMovie));
+
+			const img = new Image();
+			img.onload = () => {
+			  img.classList.remove('loading'); // Remove loading class when loaded
+			  img.classList.add('loaded');
+			};
+			img.onerror = () => {
+			  img.src = 'placeholder.jpg';
+			  img.alt = "Image could not be loaded";
+			  img.classList.remove('loading'); // Remove loading class even on error
+			  img.classList.add('loaded'); // Add loaded class in case of error to prevent further attempts
+			};
+			img.src = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'placeholder.jpg';
+
+			img.alt = item.title || item.name;
+			img.classList.add('loading'); // Add loading class initially
+
+			imgLink.appendChild(img);
+			imageContainer.appendChild(imgLink);
+
+			const detailsDiv = document.createElement('div');
+			detailsDiv.classList.add('movieDetails');
+
+			const nameHeading = document.createElement('a');
+			nameHeading.textContent = isMovie ? item.title : item.name;
+			detailsDiv.appendChild(nameHeading);
+			
+			
+			let releaseYear = "";
+			if (item.release_date) {
+				releaseYear = new Date(item.release_date).getFullYear();
+			} else if (item.first_air_date) {
+				releaseYear = new Date(item.first_air_date).getFullYear();
+			}
+			
+			const yearHeading = document.createElement('a');
+			yearHeading.classList.add('a');
+			yearHeading.innerHTML = `(${releaseYear ? releaseYear : ""})  <span>${item.vote_average ? item.vote_average.toFixed(1) + ' ⭐' : 'N/A'}</span> `; // Added span
+			detailsDiv.appendChild(yearHeading);
+			
+			
+			const providersContainer = document.createElement('div');
+			if (item.watch && item.watch.flatrate) {
+				
+				providersContainer.classList.add('movie-row-providersContainer');
+
+				item.watch.flatrate.forEach(provider => {
+					if (provider && provider.logo_path && provider.provider_name) { // Double check for data existence
+						const providerLink = document.createElement('a');
+						providerLink.href = item.watch.link || "#"; // Use the watch link or a fallback
+						providerLink.target = '_blank';
+						providerLink.rel = 'noopener noreferrer';
+
+						const providerImg = new Image();
+						providerImg.alt = provider.provider_name;
+						providerImg.classList.add('loading');
+
+						providerImg.onload = () => {
+							providerImg.classList.remove('loading');
+							providerImg.classList.add('loaded');
+						};
+						providerImg.onerror = () => {
+							providerImg.src = 'default-provider-logo.png';
+							providerImg.alt = `Logo for ${provider.provider_name} could not be loaded`;
+							providerImg.classList.remove('loading');
+							providerImg.classList.add('loaded');
+						};
+
+						providerImg.dataset.src = `https://image.tmdb.org/t/p/w92${provider.logo_path}`;
+						providerImg.src = provider.logo_path ? `${ORIGINAL_IMAGE_BASE_URL}${provider.logo_path}` : 'default-provider-logo.png';
+
+						providerLink.appendChild(providerImg);
+						providersContainer.appendChild(providerLink);
+					}
+				});
+				
+			}
+
+		
+		imageContainer.appendChild(detailsDiv);
+		imageContainer.appendChild(providersContainer);
+		movieElement.appendChild(imageContainer); // Append fragment to movieElement
+        row.appendChild(movieElement);
+    }
+    resultsContainer.appendChild(fragment);
+
+    const hasNextPage = endIndex < filmography.length;
+
+    let loadMoreButton = resultsContainer.querySelector('.load-more-button');
+
+    if (hasNextPage && !loadMoreButton) {
+        loadMoreButton = document.createElement('button');
+        loadMoreButton.textContent = 'Load More';
+        loadMoreButton.classList.add('filmography-button', 'load-more-button');
+        loadMoreButton.addEventListener('click', () => {
+			displayFilmographyPage(allCredits, currentPage+1)
+           
+            loadMoreButton.remove();
+        });
+        resultsContainer.appendChild(loadMoreButton);
+    } else if (!hasNextPage && loadMoreButton) {
+        loadMoreButton.remove();
+    }
+}
+
+
+
+
+async function getActorCredits(actorId, currentPage = 1) {
+   
+
+    const cacheKey = `${BASE_API_URL}/person/${actorId}/combined_credits?api_key=${API_KEY}&page=${currentPage}`;
+     
     if (apiCache.credits[cacheKey]) {
         return apiCache.credits[cacheKey];  // Return cached credits if available
     }
@@ -1046,6 +1155,7 @@ async function getActorCredits(actorId) {
         console.error("Error fetching actor credits:", error);
         return null;
     }
+  
 }
 
 // Consistent async/await in getMovieSuggestions
