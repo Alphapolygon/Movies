@@ -1125,7 +1125,7 @@ async function displayFilmographyPage(filmography, currentPage=1) {
         loadMoreButton.textContent = 'Load More';
         loadMoreButton.classList.add('filmography-button', 'load-more-button');
         loadMoreButton.addEventListener('click', () => {
-			displayFilmographyPage(allCredits, currentPage+1)
+			displayFilmographyPage(filmography, currentPage+1)
            
             loadMoreButton.remove();
         });
