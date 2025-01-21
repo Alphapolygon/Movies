@@ -61,7 +61,7 @@ header h1 {
 
 /* Main Container - Fixed Width (Use with Caution!) */
 .container {
-    max-width: 70%;	
+    max-width: 60%;	
 	min-width: 50%;	
     margin: 40px auto;
     padding: 30px;
@@ -622,4 +622,3 @@ header h1 {
         flex: 1 0 98%; /* Display 1 items per row on smaller screens */
     }
 }
-
