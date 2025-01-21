@@ -61,7 +61,8 @@ header h1 {
 
 /* Main Container - Fixed Width (Use with Caution!) */
 .container {
-    max-width: 90%;	
+    max-width: 70%;	
+	min-width: 50%;	
     margin: 40px auto;
     padding: 30px;
     background: rgba(255, 255, 255, 0.1);
@@ -92,7 +93,7 @@ header h1 {
 
 #movieInput {
     flex: 3 1 auto; /* Allow input to grow and shrink more than select */
-    min-width: 220px;
+    min-width: 90%;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -117,25 +118,8 @@ header h1 {
     margin-bottom: 20px;
 }
 
-#searchButton {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 5px;
-    background-color: #007bff; /* Example color */
-    color: white;
-    cursor: pointer;
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
-}
 
-#searchButton:hover {
-    background-color: #0056b3;
-}
 
-#resultsContainer {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
 
 /* Consolidated suggestions list styles */
 #suggestions {
@@ -508,36 +492,42 @@ header h1 {
 .movie-row {
     display: flex;
     flex-wrap: wrap; /* Allow wrapping to the next line */
-    justify-content: space-between; /* Distribute space evenly between items */
+    flex-direction: row; /* Arrange rows vertically */
+    /*justify-content: center;  Distribute space evenly between items */
     gap:10px; /* Space between items */
-   
+	max-width:100%;
+    justify-content: center;
+    gap: 20px;
 }
 
-.movie-row img {
-    max-width: 150px;
-	font-size: 18px;
+.movie-row-item img {
+    max-width: 200px;
+	font-size: 20px;
     height: auto;
     border: 5px solid white;
     box-sizing: border-box;
     border-radius: 0px; /* Added border-radius */
     opacity: 0; /* Initially hidden */
     transition: opacity 0.5s ease-in-out; /* Smooth transition */
+	align-items: center;
+    justify-content: center;
 }
 
-.movie-row img.loaded {
+.movie-row-item  img.loaded {
     opacity: 1; /* Visible when loaded */
 	filter: none; /* Explicitly remove the filter */
 }
 
-.movie-row img.loading {
+.movie-row-item  img.loading {
     filter: blur(5px); /* Apply blur while loading */
 }
 
 .movie-row a {
-	font-size: 12px;
+	font-size: 16px;
     color: #fff;
     text-decoration: none;
-    //transition: color 0.3s; /* Add a smooth transition */
+    transition: color 0.3s; /* Add a smooth transition */
+	
 }
 
 .movie-row a:hover {
@@ -545,10 +535,48 @@ header h1 {
     color: #64b5f6; /* Change color on hover */
 }
 
+.movie-row-item {  
+    display: flex;
+    flex-direction: row;
+    max-width: 225px;
+   
+    padding: 25px;
+    background-color: rgba(30, 30, 47, 0.85);
+    border-radius: 10px; /* Added border-radius */
+	justify-content: center;
+}
+
+
+
+.movie-row-providersContainer {  
+    display: flex;
+    flex-direction: row;
+	flex-wrap: wrap;
+    max-width: 225px;
+	height: 60px;
+    gap: 5px;
+    
+	justify-content: left;
+	align-items: center;
+}
+
+.movie-row-providersContainer img{  
+    max-width: 30px;
+	font-size: 20px;
+    height: auto;
+    border: 0px solid white;
+    box-sizing: border-box;
+    border-radius: 0px; /* Added border-radius */
+    opacity: 0; /* Initially hidden */
+    transition: opacity 0.5s ease-in-out; /* Smooth transition */
+
+}
+
+
 #resultsContainer {
     display: flex;
-    flex-direction: column; /* Arrange rows vertically */
-    gap: 20px; /* Space between rows */
+    flex-direction: column;
+    gap: 30px;
 }
 
 
@@ -559,6 +587,35 @@ header h1 {
     .image-container {
         flex: 1 0 48%; /* Display 2 items per row on smaller screens */
     }
+	
+	.movie-row-item {  
+		max-width: 46%;	
+	}
+	
+	.movie-row-item img {
+		max-width: 100px;
+		font-size: 18px;
+	}
+	
+	.movie-row a {
+		font-size: 12px;
+
+	}
+	
+	.movie-row-providersContainer img{  
+		max-width: 30px;
+		
+	}
+	
+	/* Main Container - Fixed Width (Use with Caution!) */
+	.container {
+		max-width: 90%;	
+		min-width: 50%;	
+		margin: 40px auto;
+		padding: 30px;
+
+	}
+	
 }
 @media (max-width: 480px) {
     .image-container {

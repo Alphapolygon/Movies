@@ -355,54 +355,51 @@ topRatedButton.addEventListener('click', () => {
 });
 
 
-async function loadTopRatedMovies(isMovie = true) {
-  showLoader();
+async function loadTopRatedMovies(isMovie = true, currentPage = 1) {
+    showLoader();
 
-  let url = '';
-  if (isMovie) {
-    url = `${BASE_API_URL}/movie/top_rated?api_key=${API_KEY}`;
-  } else {
-    url = `${BASE_API_URL}/tv/top_rated?api_key=${API_KEY}`;
-  }
-
-  try {
-    const data = await fetchData(url);
-
-    if (data && data.results && data.results.length > 0) {
-      totalTopRatedPages = data.total_pages;
-      const popularMovies = data.results.slice(0, 20).map(movie => ({ ...movie, isPopular: true }));
-
-      const popularMoviesWithProviders = await Promise.all(popularMovies.map(async (movie) => {
-        let providers = '';
-        try {
-          providers = await getWatchProviders(movie.id, isMovie ? 'movie' : 'tv');
-        } catch (error) {
-          console.warn(`Error fetching watch providers for ${movie.title || movie.name}:`, error);
-          // You might want to return a placeholder object here (e.g., { watch: {} })
-        }
-        // Assuming getWatchData extracts relevant data from providers
-        return { ...movie, watch: getWatchData(providers) };
-      }));
-
-      // Check if any entries in popularMoviesWithProviders have missing data
-      const validMovies = popularMoviesWithProviders.filter(movie => movie.watch); // Filter out movies with missing watch data
-
-      if (validMovies.length > 0) {
-        displayTopRatedResults(validMovies, isMovie);
-      } else {
-        resultsContainer.innerHTML = '<p>No results found with watch provider information.</p>';
-      }
+    let url = '';
+    if (isMovie) {
+        url = `${BASE_API_URL}/movie/top_rated?api_key=${API_KEY}&page=${currentPage}`;
     } else {
-      resultsContainer.innerHTML = '<p>No top rated movies found.</p>';
+        url = `${BASE_API_URL}/tv/top_rated?api_key=${API_KEY}&page=${currentPage}`;
     }
-  } catch (error) {
-    console.error('Error fetching top rated movies:', error);
-    resultsContainer.innerHTML = '<p>Error fetching top rated movies.</p>';
-  } finally {
-    hideLoader();
-  }
-}
 
+    try {
+        const data = await fetchData(url);
+
+        if (data && data.results && data.results.length > 0) {
+            totalTopRatedPages = data.total_pages;
+
+            const popularMovies = data.results.map(movie => ({ ...movie, isPopular: true }));
+
+            const popularMoviesWithProviders = await Promise.all(popularMovies.map(async (movie) => {
+                try {
+                    const providers = await getWatchProviders(movie.id, isMovie ? 'movie' : 'tv');
+                    return { ...movie, watch: getWatchData(providers) };
+                } catch (error) {
+                    console.warn(`Error fetching watch providers for ${movie.title || movie.name}:`, error);
+                    return { ...movie, watch: {} };
+                }
+            }));
+
+            const validMovies = popularMoviesWithProviders.filter(movie => movie.watch);
+
+            if (validMovies.length > 0) {
+                displayTopRatedResults(validMovies, isMovie, currentPage, data.total_pages); // Pass total_pages
+            } else {
+                resultsContainer.innerHTML = '<p>No results found with watch provider information.</p>';
+            }
+        } else {
+            resultsContainer.innerHTML = '<p>No top rated movies found.</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching top rated movies:', error);
+        resultsContainer.innerHTML = '<p>Error fetching top rated movies.</p>';
+    } finally {
+        hideLoader();
+    }
+}
 
 
 async function displayResults(results, isMovie) {
@@ -727,78 +724,132 @@ async function handlePersonClick(personName, searchTypes) {
 
 }
 
-async function displayTopRatedResults(videos, isMovie) {
-  resultsContainer.innerHTML = '';
-
-  const fragment = document.createDocumentFragment(); // Use a DocumentFragment
-
-  let row = document.createElement('div'); // Create a row container
-  row.classList.add('movie-row'); // Add a class name for styling
-
-  for (let i = 0; i < videos.length; i++) {
-    const item = videos[i];
-
-    const imageContainer = document.createElement('div');
-    imageContainer.classList.add('movieDetails');
-    const imgLink = document.createElement('a');
-    imgLink.href = '#';
-    console.log(`handleItemOrPersonClick: ${isMovie ? 'movie' : 'tv'}`);
-    imgLink.addEventListener('click', () => handleItemOrPersonClick(item.title || item.name, isMovie ? 'movie' : 'tv', isMovie));
-
-    const img = new Image();
-    img.onload = () => {
-      img.classList.remove('loading'); // Remove loading class when loaded
-      img.classList.add('loaded');
-    };
-    img.onerror = () => {
-      img.src = 'placeholder.jpg';
-      img.alt = "Image could not be loaded";
-      img.classList.remove('loading'); // Remove loading class even on error
-      img.classList.add('loaded'); // Add loaded class in case of error to prevent further attempts
-    };
-    img.src = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'placeholder.jpg';
-
-    img.alt = item.title || item.name;
-    img.classList.add('loading'); // Add loading class initially
-
-    imgLink.appendChild(img);
-    imageContainer.appendChild(imgLink);
-
-    const detailsDiv = document.createElement('div');
-  //  detailsDiv.classList.add('movieDetails');
-
-    const nameHeading = document.createElement('a');
-    nameHeading.textContent = isMovie ? item.title : item.name;
-    detailsDiv.appendChild(nameHeading);
-	
-	
-	let releaseYear = "";
-    if (item.release_date) {
-        releaseYear = new Date(item.release_date).getFullYear();
-    } else if (item.first_air_date) {
-        releaseYear = new Date(item.first_air_date).getFullYear();
-    }
+async function displayTopRatedResults(videos, isMovie, currentPage = 1, totalPages = 20) {
     
-	const yearHeading = document.createElement('a');
-    yearHeading.classList.add('a');
-    yearHeading.innerHTML = `(${releaseYear ? releaseYear : ""})  <span>${item.vote_average ? item.vote_average.toFixed(1) + ' ⭐' : 'N/A'}</span> `; // Added span
-    detailsDiv.appendChild(yearHeading);
+  
+    let row = resultsContainer.querySelector('.movie-row:last-child'); // Get the last row or null if none
+    if (!row) {
+        row = document.createElement('div');
+        row.classList.add('movie-row');
+        resultsContainer.appendChild(row);
+    }
+
+    const fragment = document.createDocumentFragment(); // Use a DocumentFragment
+
+    for (const item of videos) {
+        const movieElement = document.createElement('div');
+        movieElement.classList.add('movie-row-item');
+	
+		const imageContainer = document.createElement('div');
+		
+		const imgLink = document.createElement('a');
+		imgLink.href = '#';
+		console.log(`handleItemOrPersonClick: ${isMovie ? 'movie' : 'tv'}`);
+		imgLink.addEventListener('click', () => handleItemOrPersonClick(item.title || item.name, isMovie ? 'movie' : 'tv', isMovie));
+
+		const img = new Image();
+		img.onload = () => {
+		  img.classList.remove('loading'); // Remove loading class when loaded
+		  img.classList.add('loaded');
+		};
+		img.onerror = () => {
+		  img.src = 'placeholder.jpg';
+		  img.alt = "Image could not be loaded";
+		  img.classList.remove('loading'); // Remove loading class even on error
+		  img.classList.add('loaded'); // Add loaded class in case of error to prevent further attempts
+		};
+		img.src = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'placeholder.jpg';
+
+		img.alt = item.title || item.name;
+		img.classList.add('loading'); // Add loading class initially
+
+		imgLink.appendChild(img);
+		imageContainer.appendChild(imgLink);
+
+		const detailsDiv = document.createElement('div');
+		detailsDiv.classList.add('movieDetails');
+
+		const nameHeading = document.createElement('a');
+		nameHeading.textContent = isMovie ? item.title : item.name;
+		detailsDiv.appendChild(nameHeading);
+		
+		
+		let releaseYear = "";
+		if (item.release_date) {
+			releaseYear = new Date(item.release_date).getFullYear();
+		} else if (item.first_air_date) {
+			releaseYear = new Date(item.first_air_date).getFullYear();
+		}
+		
+		const yearHeading = document.createElement('a');
+		yearHeading.classList.add('a');
+		yearHeading.innerHTML = `(${releaseYear ? releaseYear : ""})  <span>${item.vote_average ? item.vote_average.toFixed(1) + ' ⭐' : 'N/A'}</span> `; // Added span
+		detailsDiv.appendChild(yearHeading);
+		
+		
+		const providersContainer = document.createElement('div');
+		if (item.watch && item.watch.flatrate) {
+			
+			providersContainer.classList.add('movie-row-providersContainer');
+
+			item.watch.flatrate.forEach(provider => {
+				if (provider && provider.logo_path && provider.provider_name) { // Double check for data existence
+					const providerLink = document.createElement('a');
+					providerLink.href = item.watch.link || "#"; // Use the watch link or a fallback
+					providerLink.target = '_blank';
+					providerLink.rel = 'noopener noreferrer';
+
+					const providerImg = new Image();
+					providerImg.alt = provider.provider_name;
+					providerImg.classList.add('loading');
+
+					providerImg.onload = () => {
+						providerImg.classList.remove('loading');
+						providerImg.classList.add('loaded');
+					};
+					providerImg.onerror = () => {
+						providerImg.src = 'default-provider-logo.png';
+						providerImg.alt = `Logo for ${provider.provider_name} could not be loaded`;
+						providerImg.classList.remove('loading');
+						providerImg.classList.add('loaded');
+					};
+
+					providerImg.dataset.src = `https://image.tmdb.org/t/p/w92${provider.logo_path}`;
+					providerImg.src = provider.logo_path ? `${ORIGINAL_IMAGE_BASE_URL}${provider.logo_path}` : 'default-provider-logo.png';
+
+					providerLink.appendChild(providerImg);
+					providersContainer.appendChild(providerLink);
+				}
+			});
+			
+		}
 
 	
     imageContainer.appendChild(detailsDiv);
-
-    // Add the imageContainer to the row
-    row.appendChild(imageContainer);
-
-    // Check if we have 4 movies in the row, if so append the row to fragment and create a new row
-    if ((i + 1) % 4 === 0 || i === videos.length - 1) {
-      fragment.appendChild(row);
-      row = document.createElement('div'); // Create a new row container
-      row.classList.add('movie-row'); // Add a class name for styling
-    }
+	imageContainer.appendChild(providersContainer);
+	movieElement.appendChild(imageContainer); // Append fragment to movieElement
+    row.appendChild(movieElement);
+	
   }
+ 
+  resultsContainer.appendChild(fragment);
 
-  resultsContainer.appendChild(fragment); // Append fragment to container
+    const hasNextPage = currentPage < totalPages;
+
+    let loadMoreButton = resultsContainer.querySelector('.load-more-button');
+    if (hasNextPage && !loadMoreButton) {
+        loadMoreButton = document.createElement('button');
+        loadMoreButton.textContent = 'Load More';
+        loadMoreButton.classList.add('load-more-button');
+        loadMoreButton.addEventListener('click', async () => {
+            loadTopRatedMovies(isMovie, currentPage + 1);
+            loadMoreButton.remove();
+        });
+        resultsContainer.appendChild(loadMoreButton);
+    } else if (!hasNextPage && loadMoreButton) {
+        loadMoreButton.remove();
+    }
+  
 }
 
 
