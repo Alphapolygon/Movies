@@ -303,6 +303,47 @@ async function displayDirectorResults(directors) {
         const nameHeading = document.createElement('h2');
         nameHeading.textContent = director.name;
         detailsDiv.appendChild(nameHeading);
+		
+	    try {
+		  const actorDetails = await fetchActorDetails(director.id); // Call a new function to fetch details
+		  if (actorDetails && actorDetails.birthday) {
+			const age = calculateAge(actorDetails.birthday); // Call a function to calculate age
+			const ageElement = document.createElement('p');
+			ageElement.textContent = `Age: ${age}`;
+			detailsDiv.appendChild(ageElement);
+		  }
+		  
+		  if (actorDetails && actorDetails.biography) {
+					const bioElement = document.createElement('p');
+					bioElement.classList.add('actor-bio');
+					bioElement.textContent = actorDetails.biography.length > 600 ? actorDetails.biography.substring(0, 600) + "..." : actorDetails.biography; // Limit bio length
+					detailsDiv.appendChild(bioElement);
+		   }
+
+			
+		 if (actorDetails && actorDetails.known_for) {
+				const knownForHeading = document.createElement('h3');
+				knownForHeading.textContent = "Known For:";
+				detailsDiv.appendChild(knownForHeading);
+
+				const knownForList = document.createElement('ul');
+				knownForList.classList.add('known-for-list');
+
+				// Limit to a reasonable number of known_for items (e.g., 5)
+				const maxKnownFor = Math.min(actorDetails.known_for.length, 5);
+				for (let i = 0; i < maxKnownFor; i++) {
+					const knownForItem = actorDetails.known_for[i];
+					const listItem = document.createElement('li');
+					listItem.textContent = knownForItem.title || knownForItem.name; // Use title for movies, name for TV shows
+					knownForList.appendChild(listItem);
+				}
+				detailsDiv.appendChild(knownForList);
+			}
+		} catch (error) {
+		  console.error("Error fetching actor details:", error);
+		  // Handle error gracefully (e.g., log or display a message)
+		}
+		
 
         const filmographyButton = document.createElement('button');
         filmographyButton.textContent = 'Filmography';
@@ -853,65 +894,151 @@ async function displayTopRatedResults(videos, isMovie, currentPage = 1, totalPag
   
 }
 
+async function fetchActorDetails(actorId) {
+    const cacheKey = `${BASE_API_URL}/person/${actorId}?api_key=${API_KEY}`; // Construct the API URL
 
-async function displayActorResults(actors) {
-    resultsContainer.innerHTML = '';
-
-    const fragment = document.createDocumentFragment(); // Use a DocumentFragment
-
-    for (const actor of actors) {
-        const actorDiv = document.createElement('div');
-        actorDiv.classList.add('movieItem'); // Use the same class for consistent styling
-
-        const img = new Image();
-        img.onload = () => {
-            img.classList.remove('loading');
-            img.classList.add('loaded');
-        };
-        img.onerror = () => {
-            img.src = 'placeholder.jpg';
-            img.alt = "Image could not be loaded";
-            img.classList.remove('loading');
-            img.classList.add('loaded');
-        };
-        img.src = actor.profile_path ? `${IMAGE_BASE_URL}${actor.profile_path}` : 'placeholder.jpg';
-        img.alt = actor.name;
-        img.classList.add('loading');
-
-        actorDiv.appendChild(img);
-
-        const detailsDiv = document.createElement('div');
-        detailsDiv.classList.add('movieDetails');
-
-        const nameHeading = document.createElement('h2');
-        nameHeading.textContent = actor.name;
-        detailsDiv.appendChild(nameHeading);
-
-        const filmographyButton = document.createElement('button');
-        filmographyButton.textContent = 'Filmography';
-        filmographyButton.classList.add('filmography-button');
-        filmographyButton.addEventListener('click', async () => {
-            if (filmographyRequestTimer) {
-                clearTimeout(filmographyRequestTimer);
-            }
-
-            filmographyRequestTimer = setTimeout(async () => {
-                filmographyRequestTimer = null;
-
-                await displayActorFilmography(actor.id, actor.name, false); // isDirector = false for actors
-            }, FILMOGRAPHY_REQUEST_DELAY);
-        });
-		
-        detailsDiv.appendChild(filmographyButton);
-
-        actorDiv.appendChild(detailsDiv);
-        fragment.appendChild(actorDiv); // Append to fragment
+    if (apiCache.actorDetails && apiCache.actorDetails[cacheKey]) {
+        console.log(`Actor details for ${actorId} loaded from cache.`);
+        return apiCache.actorDetails[cacheKey]; // Return cached data
     }
 
-    resultsContainer.appendChild(fragment); // Append fragment to container
-   
+    try {
+        const response = await fetch(cacheKey);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        if(!apiCache.actorDetails){
+          apiCache.actorDetails = {};
+        }
+        apiCache.actorDetails[cacheKey] = data; // Cache the fetched data
+        console.log(`Actor details for ${actorId} fetched from API.`);
+        return data;
+
+    } catch (error) {
+        console.error(`Error fetching actor details for ${actorId}:`, error);
+        return null; // Return null in case of error
+    }
 }
 
+
+async function displayActorResults(actors) {
+  resultsContainer.innerHTML = '';
+
+  const fragment = document.createDocumentFragment(); // Use a DocumentFragment
+
+  for (const actor of actors) {
+    const actorDiv = document.createElement('div');
+    actorDiv.classList.add('movieItem'); // Use the same class for consistent styling
+
+    const img = new Image();
+    img.onload = () => {
+      img.classList.remove('loading');
+      img.classList.add('loaded');
+    };
+    img.onerror = () => {
+      img.src = 'placeholder.jpg';
+      img.alt = "Image could not be loaded";
+      img.classList.remove('loading');
+      img.classList.add('loaded');
+    };
+    img.src = actor.profile_path ? `${IMAGE_BASE_URL}${actor.profile_path}` : 'placeholder.jpg';
+    img.alt = actor.name;
+    img.classList.add('loading');
+
+    actorDiv.appendChild(img);
+
+    const detailsDiv = document.createElement('div');
+    detailsDiv.classList.add('movieDetails');
+
+    const nameHeading = document.createElement('h2');
+    nameHeading.textContent = actor.name;
+    detailsDiv.appendChild(nameHeading);
+
+   try {
+      const actorDetails = await fetchActorDetails(actor.id); // Call a new function to fetch details
+      if (actorDetails && actorDetails.birthday) {
+        const age = calculateAge(actorDetails.birthday); // Call a function to calculate age
+        const ageElement = document.createElement('p');
+        ageElement.textContent = `Age: ${age}`;
+        detailsDiv.appendChild(ageElement);
+      }
+	  
+	  if (actorDetails && actorDetails.biography) {
+                const bioElement = document.createElement('p');
+                bioElement.classList.add('actor-bio');
+                bioElement.textContent = actorDetails.biography.length > 600 ? actorDetails.biography.substring(0, 600) + "..." : actorDetails.biography; // Limit bio length
+                detailsDiv.appendChild(bioElement);
+       }
+
+		
+	 if (actorDetails && actorDetails.known_for) {
+			const knownForHeading = document.createElement('h3');
+			knownForHeading.textContent = "Known For:";
+			detailsDiv.appendChild(knownForHeading);
+
+			const knownForList = document.createElement('ul');
+			knownForList.classList.add('known-for-list');
+
+			// Limit to a reasonable number of known_for items (e.g., 5)
+			const maxKnownFor = Math.min(actorDetails.known_for.length, 5);
+			for (let i = 0; i < maxKnownFor; i++) {
+				const knownForItem = actorDetails.known_for[i];
+				const listItem = document.createElement('li');
+				listItem.textContent = knownForItem.title || knownForItem.name; // Use title for movies, name for TV shows
+				knownForList.appendChild(listItem);
+			}
+			detailsDiv.appendChild(knownForList);
+        }
+    } catch (error) {
+      console.error("Error fetching actor details:", error);
+      // Handle error gracefully (e.g., log or display a message)
+    }
+
+
+   
+
+    const filmographyButton = document.createElement('button');
+    filmographyButton.textContent = 'Filmography';
+    filmographyButton.classList.add('filmography-button');
+    filmographyButton.addEventListener('click', async () => {
+      if (filmographyRequestTimer) {
+        clearTimeout(filmographyRequestTimer);
+      }
+
+      filmographyRequestTimer = setTimeout(async () => {
+        filmographyRequestTimer = null;
+
+        await displayActorFilmography(actor.id, actor.name, false); // isDirector = false for actors
+      }, FILMOGRAPHY_REQUEST_DELAY);
+    });
+
+    detailsDiv.appendChild(filmographyButton);
+
+    actorDiv.appendChild(detailsDiv);
+    fragment.appendChild(actorDiv); // Append to fragment
+  }
+
+  resultsContainer.appendChild(fragment); // Append fragment to container
+}
+
+// Function to calculate age (assuming birthday is in YYYY-MM-DD format)
+function calculateAge(birthday) {
+  const today = new Date();
+  const birthDate = new Date(birthday);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const birthMonth = birthDate.getMonth();
+  const currentMonth = today.getMonth();
+
+  if (currentMonth < birthMonth || (currentMonth === birthMonth && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+
+}
 async function displayActorFilmography(actorId, actorName, isDirector = false) {
     resultsContainer.innerHTML = '';
     showLoader();
