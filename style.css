@@ -21,7 +21,7 @@ header {
     backdrop-filter: blur(8px);
     padding: 10px 0; /* Reduced padding */
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+   
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -127,15 +127,15 @@ header h1 {
     padding: 0;
     margin: 0;
     position: absolute;
-    width: calc(100% - 122px);
-    border: 1px solid #ccc;
+    width: calc(80% - 122px);
+    border: 0px solid #ccc;
     border-top: none;
     border-radius: 0 0 4px 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1;
     box-sizing: border-box;
     top: 100%;
-    left: 72px;
+    left: 210px;
     background-color: white;
 }
 
@@ -323,29 +323,33 @@ header h1 {
 }
 
 .providersContainer {
+
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
-	flex-direction: column; /* Added flex-direction: column */
-    gap: 10px;
-	max-width: 40px;
-    margin-top: auto;
-    align-items: left;
+    align-items: center;
     justify-content: flex-start;
+    gap: 5px;
+	height: 20px;
+    width: fit-content; /* Make container only as wide as its content */
+	
+
 }
 
-.providersContainer a {
-    display: inline-block;
+.providersContainer a { /* Style the links directly */
+    display: block;
+    flex: 0 0 auto; /* Prevent stretching */
+    margin: 0;
 }
+
 
 .providersContainer img {
-    max-height: 40px;
-    width: auto;
+ 
+    height: 40px;
+    width: 40px;
+    object-fit: contain;
     display: block;
-    max-width: 40px;
-    height: auto;
-	border: 0px;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
+    border: none;
 }
 
 .providersContainer img.loaded {
@@ -614,6 +618,28 @@ header h1 {
 		margin: 40px auto;
 		padding: 30px;
 
+	}
+	
+	#searchForm {
+		position: relative; /* Needed for absolute positioning of #suggestions */
+	}
+
+	#suggestions {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		position: absolute; /* Position relative to the search form */
+		top: 100%; /* Position below the search form */
+		left: 0; /* Align to the left edge of the search form */
+		width: 100%; /* Take full width of the search form */
+		border: 0px solid #ccc; /* Use a 1px border */
+		border-top: none;
+		border-radius: 0 0 4px 4px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		z-index: 1;
+		box-sizing: border-box;
+		left : 10px;
+		
 	}
 	
 }
