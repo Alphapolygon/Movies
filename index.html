@@ -299,7 +299,8 @@
         
         let userRegion = 'US';
         let apiCache = { genres: {}, credits: {}, actorDetails: {}, providers: {} };
-        let allGenresCache = JSON.parse(localStorage.getItem('all_genres')) || {};
+        // Changed key to 'all_genres_v2' to reset cache with new multi-type support structure
+        let allGenresCache = JSON.parse(localStorage.getItem('all_genres_v2')) || {};
         let allProvidersCache = JSON.parse(localStorage.getItem('all_providers')) || {};
         let watchlist = JSON.parse(localStorage.getItem('my_watchlist')) || [];
         let inputTimeoutId;
@@ -996,8 +997,16 @@
             try {
                 const data = await fetchData(`${BASE_API_URL}/genre/${type}/list?api_key=${API_KEY}&language=en-US`);
                 if (data && data.genres) {
-                    data.genres.forEach(g => allGenresCache[g.id] = { name: g.name, type });
-                    localStorage.setItem('all_genres', JSON.stringify(allGenresCache));
+                    data.genres.forEach(g => {
+                        // Handle multi-type genres (e.g. Comedy exists in both Movie and TV)
+                        const existing = allGenresCache[g.id] || {};
+                        const types = existing.types || [];
+                        if (!types.includes(type)) {
+                            types.push(type);
+                        }
+                        allGenresCache[g.id] = { name: g.name, types: types };
+                    });
+                    localStorage.setItem('all_genres_v2', JSON.stringify(allGenresCache));
                 }
             } catch (e) { console.error(e); }
         }
@@ -1019,7 +1028,7 @@
         function updateGenreDropdown(type) {
             genreSelect.innerHTML = '<option value="">All Genres</option>';
             const genres = Object.entries(allGenresCache)
-                .filter(([id, g]) => g.type === type)
+                .filter(([id, g]) => g.types && g.types.includes(type)) // Filter by checking the types array
                 .sort((a, b) => a[1].name.localeCompare(b[1].name));
             
             genres.forEach(([id, g]) => {
