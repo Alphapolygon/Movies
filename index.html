@@ -936,8 +936,10 @@
             providerSelect.innerHTML = '<option value="">All Services</option>';
             const providers = allProvidersCache[type] || [];
             
-            // Limit to top 30 to keep dropdown manageable
-            providers.slice(0, 30).forEach(p => {
+            // Limit to top 30 to keep dropdown manageable, then sort alphabetically for easier browsing
+            const topProviders = providers.slice(0, 30).sort((a, b) => a.provider_name.localeCompare(b.provider_name));
+            
+            topProviders.forEach(p => {
                 const option = document.createElement('option');
                 option.value = p.provider_id;
                 option.textContent = p.provider_name;
