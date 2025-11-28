@@ -213,16 +213,25 @@
                     <div class="h-8 w-px bg-white/10 hidden md:block"></div>
 
                     <!-- Genre Dropdown -->
-                    <div class="relative w-full md:w-48">
+                    <div class="relative w-full md:w-36">
                         <select id="genreSelect" class="w-full bg-slate-900/50 text-white text-sm border border-white/10 rounded-xl px-4 py-2 appearance-none focus:outline-none focus:ring-2 focus:ring-brand-accent">
                             <option value="">All Genres</option>
                             <!-- Populated via JS -->
                         </select>
                         <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i>
                     </div>
+                    
+                     <!-- Provider Dropdown -->
+                     <div class="relative w-full md:w-36">
+                        <select id="providerSelect" class="w-full bg-slate-900/50 text-white text-sm border border-white/10 rounded-xl px-4 py-2 appearance-none focus:outline-none focus:ring-2 focus:ring-brand-accent">
+                            <option value="">All Services</option>
+                            <!-- Populated via JS -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i>
+                    </div>
 
                     <!-- Sort Dropdown -->
-                    <div class="relative w-full md:w-48">
+                    <div class="relative w-full md:w-36">
                         <select id="sortSelect" class="w-full bg-slate-900/50 text-white text-sm border border-white/10 rounded-xl px-4 py-2 appearance-none focus:outline-none focus:ring-2 focus:ring-brand-accent">
                             <option value="popularity.desc">Popular</option>
                             <option value="vote_average.desc">Top Rated</option>
@@ -288,8 +297,9 @@
         let currentFilmographyList = []; // Store full credits here for client-side pagination
         
         let userRegion = 'US';
-        let apiCache = { genres: {}, credits: {}, actorDetails: {} };
+        let apiCache = { genres: {}, credits: {}, actorDetails: {}, providers: {} };
         let allGenresCache = JSON.parse(localStorage.getItem('all_genres')) || {};
+        let allProvidersCache = JSON.parse(localStorage.getItem('all_providers')) || {};
         let watchlist = JSON.parse(localStorage.getItem('my_watchlist')) || [];
         let inputTimeoutId;
 
@@ -304,6 +314,7 @@
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         const loadMoreBtn = document.getElementById('loadMoreButton');
         const genreSelect = document.getElementById('genreSelect');
+        const providerSelect = document.getElementById('providerSelect');
         const sortSelect = document.getElementById('sortSelect');
         const browseTypeBtns = document.querySelectorAll('.browse-type-btn');
         const videoModal = document.getElementById('videoModal');
@@ -314,10 +325,14 @@
             await detectUserRegion();
             regionDisplay.textContent = userRegion;
             
-            // Populate Genres
+            // Populate Data
             await loadGenres('movie');
-            await loadGenres('tv'); // Cache both
+            await loadGenres('tv');
+            await loadProviders('movie');
+            await loadProviders('tv');
+
             updateGenreDropdown('movie');
+            updateProviderDropdown('movie');
 
             // Initial load
             runDiscovery();
@@ -369,6 +384,7 @@
                 // Logic
                 browseType = btn.dataset.value;
                 updateGenreDropdown(browseType);
+                updateProviderDropdown(browseType);
                 currentPage = 1;
                 runDiscovery();
             });
@@ -378,6 +394,7 @@
         document.querySelector('.browse-type-btn[data-value="movie"]').classList.add('bg-brand-accent', 'text-white');
 
         genreSelect.addEventListener('change', () => { currentPage = 1; runDiscovery(); });
+        providerSelect.addEventListener('change', () => { currentPage = 1; runDiscovery(); });
         sortSelect.addEventListener('change', () => { currentPage = 1; runDiscovery(); });
 
         // Load More
@@ -412,13 +429,17 @@
 
             const sort = sortSelect.value;
             const genre = genreSelect.value;
+            const provider = providerSelect.value;
             const type = browseType;
             
             // Build Discovery URL
-            // Default: /discover/movie
-            let url = `${BASE_API_URL}/discover/${type}?api_key=${API_KEY}&page=${currentPage}&sort_by=${sort}&include_adult=false&vote_count.gte=100`;
+            let url = `${BASE_API_URL}/discover/${type}?api_key=${API_KEY}&page=${currentPage}&sort_by=${sort}&include_adult=false&vote_count.gte=50`;
             
             if (genre) url += `&with_genres=${genre}`;
+            
+            if (provider) {
+                url += `&with_watch_providers=${provider}&watch_region=${userRegion}`;
+            }
             
             // Date logic for "Newest" to ensure released items
             if (sort === 'primary_release_date.desc') {
@@ -721,19 +742,13 @@
             try {
                 const credits = await getActorCredits(id);
                 if(credits) {
-                    // Fix: Select the specific list based on role to avoid deduplication issues
-                    // (e.g., preventing an acting credit from hiding a directing credit for the same movie)
                     let sourceList = [];
-                    
                     if (isDirector) {
-                        // For directors, we strictly want directing credits from the crew list
                         sourceList = (credits.crew || []).filter(c => c.job === 'Director' && c.media_type === 'movie');
                     } else {
-                        // For actors, we want the cast list
                         sourceList = (credits.cast || []).filter(c => c.media_type === 'movie');
                     }
 
-                    // Deduplicate by ID
                     const seenIds = new Set();
                     const uniqueCredits = [];
                     for (const credit of sourceList) {
@@ -743,10 +758,8 @@
                         }
                     }
 
-                    // Sort by newest first
                     uniqueCredits.sort((a, b) => new Date(b.release_date || 0) - new Date(a.release_date || 0));
 
-                    // Store in global state for pagination
                     currentFilmographyList = uniqueCredits;
 
                     if (currentFilmographyList.length > 0) {
@@ -771,7 +784,6 @@
                 return;
             }
 
-            // Fetch providers only for this batch
             const itemsWithProviders = await Promise.all(batch.map(async (item) => {
                     const providers = await getWatchProviders(item.id, item.media_type || 'movie');
                     return { ...item, watch: getWatchData(providers) };
@@ -779,7 +791,6 @@
 
             itemsWithProviders.forEach(item => renderCard(item, true, false));
 
-            // Show/Hide load more button based on if there are items left
             if (end < currentFilmographyList.length) {
                 loadMoreContainer.classList.remove('hidden');
             } else {
@@ -794,19 +805,16 @@
             const icon = btn.querySelector('i');
             
             if (index === -1) {
-                // Add
                 watchlist.push({ id, title, poster_path: poster === 'null' ? null : poster, media_type: type, vote_average: rating, release_date: year });
                 icon.classList.remove('text-white/50');
                 icon.classList.add('text-red-500');
                 showToast("Added to Watchlist", "success");
             } else {
-                // Remove
                 watchlist.splice(index, 1);
                 icon.classList.add('text-white/50');
                 icon.classList.remove('text-red-500');
                 showToast("Removed from Watchlist", "info");
                 
-                // If currently viewing watchlist, refresh
                 if (currentViewMode === 'watchlist') {
                     showWatchlist();
                 }
@@ -829,13 +837,7 @@
                 return;
             }
 
-            // Render stored items
             watchlist.forEach(item => {
-                // We mock the renderCard with stored data. Note: Providers won't update dynamically here to save API calls, but that's standard.
-                // Re-using renderCard logic requires formatting the item object slightly to match API response structure if needed.
-                // Our stored object keys match mostly.
-                // We pass 'false' for mainItem.
-                // We need to pass media_type to renderCard.
                 renderCard(item, item.media_type === 'movie', false);
             });
         }
@@ -847,7 +849,6 @@
             try {
                 const url = `${BASE_API_URL}/${type}/${id}/videos?api_key=${API_KEY}`;
                 const data = await fetchData(url);
-                // Prioritize "Trailer" on YouTube, then "Teaser", then any YouTube video
                 const video = data.results.find(v => v.site === "YouTube" && v.type === "Trailer") 
                               || data.results.find(v => v.site === "YouTube" && v.type === "Teaser")
                               || data.results.find(v => v.site === "YouTube");
@@ -855,7 +856,6 @@
                 if (video) {
                     openVideoModal(video.key, title);
                 } else {
-                    // Fallback if no video found in API
                     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(title + " " + type + " trailer")}`;
                     window.open(searchUrl, '_blank');
                 }
@@ -885,22 +885,35 @@
 
         function closeVideoModal() {
             videoModal.classList.add('hidden');
-            videoContainer.innerHTML = ''; // Stop playback
+            videoContainer.innerHTML = ''; 
         }
 
-        // Close modal on outside click
         videoModal.addEventListener('click', (e) => {
             if (e.target === videoModal) closeVideoModal();
         });
 
 
-        // --- Genre Logic ---
+        // --- Genre & Provider Logic ---
         async function loadGenres(type) {
             try {
                 const data = await fetchData(`${BASE_API_URL}/genre/${type}/list?api_key=${API_KEY}&language=en-US`);
                 if (data && data.genres) {
                     data.genres.forEach(g => allGenresCache[g.id] = { name: g.name, type });
                     localStorage.setItem('all_genres', JSON.stringify(allGenresCache));
+                }
+            } catch (e) { console.error(e); }
+        }
+        
+        async function loadProviders(type) {
+            try {
+                const data = await fetchData(`${BASE_API_URL}/watch/providers/${type}?api_key=${API_KEY}&watch_region=${userRegion}`);
+                if (data && data.results) {
+                    // Filter popular or high priority ones to avoid clutter
+                    const providers = data.results
+                        .sort((a, b) => a.display_priority - b.display_priority)
+                        
+                    allProvidersCache[type] = providers;
+                    localStorage.setItem('all_providers', JSON.stringify(allProvidersCache));
                 }
             } catch (e) { console.error(e); }
         }
@@ -918,6 +931,19 @@
                 genreSelect.appendChild(option);
             });
         }
+        
+        function updateProviderDropdown(type) {
+            providerSelect.innerHTML = '<option value="">All Services</option>';
+            const providers = allProvidersCache[type] || [];
+            
+            // Limit to top 30 to keep dropdown manageable
+            providers.slice(0, 30).forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.provider_id;
+                option.textContent = p.provider_name;
+                providerSelect.appendChild(option);
+            });
+        }
 
         async function getGenreNames(ids, isMovie) {
             if (!ids || ids.length === 0) return [];
@@ -931,7 +957,7 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(response.statusText);
                 const data = await response.json();
-                apiCache[url] = data; // Simple cache
+                apiCache[url] = data; 
                 return data;
             } catch (error) { return null; }
         }
@@ -972,7 +998,6 @@
              return data?.results;
         }
         async function getActorCredits(id) {
-             // combined_credits returns all results, pagination is done client-side
              return await fetchData(`${BASE_API_URL}/person/${id}/combined_credits?api_key=${API_KEY}`);
         }
 
