@@ -277,6 +277,7 @@
         const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w400';
         const PROFILE_BASE_URL = 'https://image.tmdb.org/t/p/w200';
         const ORIGINAL_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
+        const CREDITS_PER_PAGE = 20;
         
         // State variables
         let currentSearchType = 'movie'; // Context for Search Bar
@@ -284,6 +285,7 @@
         let currentViewMode = 'discover'; // 'discover' (browse), 'search', 'filmography', 'watchlist'
         let currentSearchId = null; 
         let currentPage = 1;
+        let currentFilmographyList = []; // Store full credits here for client-side pagination
         
         let userRegion = 'US';
         let apiCache = { genres: {}, credits: {}, actorDetails: {} };
@@ -388,6 +390,8 @@
                     await runDiscovery(true);
                 } else if (currentViewMode === 'search' && currentSearchId) {
                     await fetchAndDisplayRecommendations(currentSearchType, currentSearchId, currentPage, true);
+                } else if (currentViewMode === 'filmography') {
+                    await renderFilmographyBatch();
                 }
             } catch (error) {
                 console.error("Load more failed", error);
@@ -709,37 +713,78 @@
         
         async function loadFilmography(id, name, isDirector) {
             showLoader();
+            currentViewMode = 'filmography';
+            currentPage = 1;
             resultsContainer.innerHTML = `<div class="col-span-full text-center py-4"><h2 class="text-2xl text-white">Filmography for <span class="text-brand-accent">${name}</span></h2><button onclick="runDiscovery()" class="text-sm text-slate-400 hover:text-white underline mt-2">Back to Browse</button></div>`;
             loadMoreContainer.classList.add('hidden'); 
+            
             try {
-                const credits = await getActorCredits(id, 1);
-                if(credits && credits.cast) {
-                    let allCredits = [...credits.cast, ...credits.crew];
+                const credits = await getActorCredits(id);
+                if(credits) {
+                    // Fix: Select the specific list based on role to avoid deduplication issues
+                    // (e.g., preventing an acting credit from hiding a directing credit for the same movie)
+                    let sourceList = [];
+                    
+                    if (isDirector) {
+                        // For directors, we strictly want directing credits from the crew list
+                        sourceList = (credits.crew || []).filter(c => c.job === 'Director' && c.media_type === 'movie');
+                    } else {
+                        // For actors, we want the cast list
+                        sourceList = (credits.cast || []).filter(c => c.media_type === 'movie');
+                    }
+
+                    // Deduplicate by ID
                     const seenIds = new Set();
                     const uniqueCredits = [];
-                    for (const credit of allCredits) {
+                    for (const credit of sourceList) {
                         if(!seenIds.has(credit.id)) {
                             uniqueCredits.push(credit);
                             seenIds.add(credit.id);
                         }
                     }
-                    let filtered = isDirector 
-                        ? uniqueCredits.filter(c => c.job === "Director" && c.media_type === "movie")
-                        : uniqueCredits.filter(c => c.media_type === "movie");
 
-                    filtered.sort((a, b) => new Date(b.release_date || 0) - new Date(a.release_date || 0));
+                    // Sort by newest first
+                    uniqueCredits.sort((a, b) => new Date(b.release_date || 0) - new Date(a.release_date || 0));
 
-                    const topCredits = filtered.slice(0, 20);
-                    const itemsWithProviders = await Promise.all(topCredits.map(async (item) => {
-                         const providers = await getWatchProviders(item.id, item.media_type || 'movie');
-                         return { ...item, watch: getWatchData(providers) };
-                    }));
-                    itemsWithProviders.forEach(item => renderCard(item, true, false));
+                    // Store in global state for pagination
+                    currentFilmographyList = uniqueCredits;
+
+                    if (currentFilmographyList.length > 0) {
+                        await renderFilmographyBatch();
+                    } else {
+                        resultsContainer.innerHTML += '<p class="col-span-full text-center text-slate-500">No matching records found.</p>';
+                    }
                 } else {
                     resultsContainer.innerHTML += '<p class="col-span-full text-center text-slate-500">No credits found.</p>';
                 }
             } catch (error) { console.error(error); } 
             finally { hideLoader(); }
+        }
+
+        async function renderFilmographyBatch() {
+            const start = (currentPage - 1) * CREDITS_PER_PAGE;
+            const end = start + CREDITS_PER_PAGE;
+            const batch = currentFilmographyList.slice(start, end);
+
+            if (batch.length === 0) {
+                loadMoreContainer.classList.add('hidden');
+                return;
+            }
+
+            // Fetch providers only for this batch
+            const itemsWithProviders = await Promise.all(batch.map(async (item) => {
+                    const providers = await getWatchProviders(item.id, item.media_type || 'movie');
+                    return { ...item, watch: getWatchData(providers) };
+            }));
+
+            itemsWithProviders.forEach(item => renderCard(item, true, false));
+
+            // Show/Hide load more button based on if there are items left
+            if (end < currentFilmographyList.length) {
+                loadMoreContainer.classList.remove('hidden');
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
         }
 
         // --- Watchlist Functions ---
@@ -926,8 +971,9 @@
              const data = await fetchData(`${BASE_API_URL}/search/person?api_key=${API_KEY}&query=${encodeURIComponent(name)}`);
              return data?.results;
         }
-        async function getActorCredits(id, page) {
-             return await fetchData(`${BASE_API_URL}/person/${id}/combined_credits?api_key=${API_KEY}&page=${page}`);
+        async function getActorCredits(id) {
+             // combined_credits returns all results, pagination is done client-side
+             return await fetchData(`${BASE_API_URL}/person/${id}/combined_credits?api_key=${API_KEY}`);
         }
 
         // --- Globals ---
