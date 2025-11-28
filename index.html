@@ -220,6 +220,15 @@
                         </select>
                         <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i>
                     </div>
+
+                    <!-- Decade Dropdown -->
+                    <div class="relative w-full md:w-36">
+                        <select id="decadeSelect" class="w-full bg-slate-900/50 text-white text-sm border border-white/10 rounded-xl px-4 py-2 appearance-none focus:outline-none focus:ring-2 focus:ring-brand-accent">
+                            <option value="">All Decades</option>
+                            <!-- Populated via JS -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i>
+                    </div>
                     
                      <!-- Provider Dropdown -->
                      <div class="relative w-full md:w-36">
@@ -316,6 +325,7 @@
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         const loadMoreBtn = document.getElementById('loadMoreButton');
         const genreSelect = document.getElementById('genreSelect');
+        const decadeSelect = document.getElementById('decadeSelect'); // New Element
         const providerSelect = document.getElementById('providerSelect');
         const sortSelect = document.getElementById('sortSelect');
         const browseTypeBtns = document.querySelectorAll('.browse-type-btn');
@@ -328,6 +338,7 @@
             regionDisplay.textContent = userRegion;
             
             // Populate Data
+            populateDecades(); // Initialize decades
             await loadGenres('movie');
             await loadGenres('tv');
             await loadProviders('movie');
@@ -396,6 +407,7 @@
         document.querySelector('.browse-type-btn[data-value="movie"]').classList.add('bg-brand-accent', 'text-white');
 
         genreSelect.addEventListener('change', () => { currentPage = 1; runDiscovery(); });
+        decadeSelect.addEventListener('change', () => { currentPage = 1; runDiscovery(); }); // New Listener
         providerSelect.addEventListener('change', () => { currentPage = 1; runDiscovery(); });
         sortSelect.addEventListener('change', () => { currentPage = 1; runDiscovery(); });
 
@@ -434,6 +446,7 @@
             const sort = sortSelect.value;
             const genre = genreSelect.value;
             const provider = providerSelect.value;
+            const decade = decadeSelect.value; // Get decade
             const type = browseType;
             
             // Build Discovery URL
@@ -444,9 +457,19 @@
             if (provider) {
                 url += `&with_watch_providers=${provider}&watch_region=${userRegion}`;
             }
-            
-            // Date logic for "Newest" to ensure released items
-            if (sort === 'primary_release_date.desc') {
+
+            // Date logic for Decade filtering
+            if (decade) {
+                const startDate = `${decade}-01-01`;
+                const endDate = `${parseInt(decade) + 9}-12-31`;
+                
+                if (type === 'movie') {
+                    url += `&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDate}`;
+                } else {
+                    url += `&first_air_date.gte=${startDate}&first_air_date.lte=${endDate}`;
+                }
+            } else if (sort === 'primary_release_date.desc') {
+                 // Only apply "today" limit if sorting by newest AND no decade is selected
                  const today = new Date().toISOString().split('T')[0];
                  url += `&primary_release_date.lte=${today}`;
             }
@@ -993,6 +1016,21 @@
 
 
         // --- Genre & Provider Logic ---
+        
+        function populateDecades() {
+            const currentYear = new Date().getFullYear();
+            const currentDecade = Math.floor(currentYear / 10) * 10;
+            
+            decadeSelect.innerHTML = '<option value="">All Decades</option>';
+            
+            for (let y = currentDecade; y >= 1900; y -= 10) {
+                const option = document.createElement('option');
+                option.value = y;
+                option.textContent = `${y}s`;
+                decadeSelect.appendChild(option);
+            }
+        }
+
         async function loadGenres(type) {
             try {
                 const data = await fetchData(`${BASE_API_URL}/genre/${type}/list?api_key=${API_KEY}&language=en-US`);
