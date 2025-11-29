@@ -149,6 +149,31 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-md p-6 rounded-2xl border border-white/10 relative">
+            <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-gear text-brand-accent"></i> Settings
+            </h2>
+            
+            <div class="flex items-center justify-between py-4 border-t border-white/5">
+                <div>
+                    <h3 class="text-white font-semibold">Hide Unavailable</h3>
+                    <p class="text-slate-400 text-xs mt-1">Only show content available on streaming services in your region.</p>
+                </div>
+                
+                <!-- Toggle Switch -->
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="unavailableToggle" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-accent"></div>
+                </label>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation / Header -->
     <nav class="fixed top-0 w-full z-40 glass-panel border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -165,6 +190,11 @@
                     <!-- Watchlist Button -->
                     <button onclick="showWatchlist()" class="text-sm font-medium text-slate-300 hover:text-brand-accent transition-colors flex items-center gap-2">
                         <i class="fa-solid fa-heart"></i> <span class="hidden sm:inline">My Watchlist</span>
+                    </button>
+
+                    <!-- Settings Button -->
+                    <button onclick="openSettingsModal()" class="text-slate-400 hover:text-white transition-colors p-2" title="Settings">
+                        <i class="fa-solid fa-gear text-lg"></i>
                     </button>
 
                     <!-- Region Indicator -->
@@ -314,8 +344,9 @@
     <!-- JavaScript Logic -->
     <script>
         // --- Configuration & Global Variables ---
-        const API_KEY = '3bbf380371a2169bd25b710058646650';
-        const BASE_API_URL = 'https://api.themoviedb.org/3';
+        // Using Cloudflare Worker Proxy
+        const BASE_API_URL = 'https://holy-mountain-5132.janne-piekkola.workers.dev/3';
+        
         const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w400';
         const PROFILE_BASE_URL = 'https://image.tmdb.org/t/p/w200';
         const ORIGINAL_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
@@ -334,6 +365,7 @@
         let selectedGenres = new Set();
         let selectedDecades = new Set();
         let selectedProviders = new Set();
+        let hideUnavailable = JSON.parse(localStorage.getItem('hide_unavailable')) || false;
 
         let userRegion = 'US';
         let apiCache = { genres: {}, credits: {}, actorDetails: {}, providers: {} };
@@ -356,11 +388,14 @@
         const browseTypeBtns = document.querySelectorAll('.browse-type-btn');
         const videoModal = document.getElementById('videoModal');
         const videoContainer = document.getElementById('videoContainer');
+        const settingsModal = document.getElementById('settingsModal');
+        const unavailableToggle = document.getElementById('unavailableToggle');
 
         // --- Initialization ---
         document.addEventListener("DOMContentLoaded", async () => {
             await detectUserRegion();
             regionDisplay.textContent = userRegion;
+            unavailableToggle.checked = hideUnavailable; // Set initial state
             
             // Initial load of data
             await loadGenres('movie');
@@ -374,6 +409,25 @@
             // Initial load
             runDiscovery();
         });
+
+        // --- Settings Logic ---
+        function openSettingsModal() { settingsModal.classList.remove('hidden'); }
+        function closeSettingsModal() { settingsModal.classList.add('hidden'); }
+        
+        unavailableToggle.addEventListener('change', () => {
+            hideUnavailable = unavailableToggle.checked;
+            localStorage.setItem('hide_unavailable', hideUnavailable);
+            currentPage = 1;
+            resultsContainer.innerHTML = '';
+            
+            // Reload logic based on current view
+            if (currentViewMode === 'discover') runDiscovery();
+            else if (currentViewMode === 'search_results') performTextSearch(currentQuery, false);
+            else if (currentViewMode === 'filmography') renderFilmographyBatch(); // re-render batch to filter
+            else if (currentViewMode === 'item_details' && currentSearchId) loadContent(currentSearchId, currentSearchType); // reload current item
+        });
+
+        settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) closeSettingsModal(); });
 
         // --- Dropdown Logic (Multi-select) ---
         
@@ -558,11 +612,11 @@
             const sort = sortSelect.value;
             const type = browseType;
             
-            let url = `${BASE_API_URL}/discover/${type}?api_key=${API_KEY}&page=${currentPage}&sort_by=${sort}&include_adult=false&vote_count.gte=50`;
+            let url = `${BASE_API_URL}/discover/${type}?page=${currentPage}&sort_by=${sort}&include_adult=false&vote_count.gte=50`;
             
             // Apply Multi-select Filters
             if (selectedGenres.size > 0) {
-                url += `&with_genres=${Array.from(selectedGenres).join('|')}`; // Pipe = OR logic for genres (usually preferred for discovery)
+                url += `&with_genres=${Array.from(selectedGenres).join('|')}`; // Pipe = OR logic for genres
             }
             
             if (selectedProviders.size > 0) {
@@ -586,6 +640,12 @@
             } else if (sort === 'primary_release_date.desc') {
                  const today = new Date().toISOString().split('T')[0];
                  url += `&primary_release_date.lte=${today}`;
+            }
+            
+            // API-level filtering for Unavailable content (Optimization)
+            // This prevents "empty pages" in discovery mode
+            if (hideUnavailable) {
+                url += `&with_watch_monetization_types=flatrate|free|ads&watch_region=${userRegion}`;
             }
 
             try {
@@ -619,8 +679,6 @@
             }
         }
 
-        // ... [Standard Search Functions omitted, identical logic, just updated with currentViewMode] ...
-        
         async function searchContent() {
             const query = movieInput.value.trim();
             suggestionsList.classList.add('hidden');
@@ -640,7 +698,7 @@
         }
 
         async function performTextSearch(query, isLoadMore) {
-            const url = `${BASE_API_URL}/search/${currentSearchType}?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=${currentPage}&include_adult=false`;
+            const url = `${BASE_API_URL}/search/${currentSearchType}?query=${encodeURIComponent(query)}&page=${currentPage}&include_adult=false`;
             try { const data = await fetchData(url); const results = data?.results || [];
                 if (!isLoadMore) { resultsContainer.innerHTML = `<div class="col-span-full mb-4"><h2 class="text-2xl font-bold text-white">Results for "<span class="text-brand-accent">${query}</span>"</h2></div>`; }
                 if (results.length > 0) {
@@ -667,7 +725,7 @@
         }
 
         async function fetchAndDisplayRecommendations(type, id, page, isLoadMore) {
-            const data = await fetchData(`${BASE_API_URL}/${type}/${id}/recommendations?api_key=${API_KEY}&page=${page}`);
+            const data = await fetchData(`${BASE_API_URL}/${type}/${id}/recommendations?page=${page}`);
             const items = data?.results || [];
             if (items.length > 0) {
                 if (!isLoadMore) resultsContainer.innerHTML += `<div class="col-span-full mt-8 mb-4 pt-8 border-t border-white/10"><h3 class="text-xl font-semibold text-slate-300">More Like This</h3></div>`;
@@ -680,12 +738,20 @@
         async function surpriseMe() {
             showLoader(); resultsContainer.innerHTML = ''; loadMoreContainer.classList.add('hidden');
             const randomPage = Math.floor(Math.random() * 20) + 1;
-            try { const data = await fetchData(`${BASE_API_URL}/discover/${browseType}?api_key=${API_KEY}&page=${randomPage}&sort_by=vote_average.desc&vote_count.gte=300&include_adult=false`);
+            try { const data = await fetchData(`${BASE_API_URL}/discover/${browseType}?page=${randomPage}&sort_by=vote_average.desc&vote_count.gte=300&include_adult=false`);
                 if(data?.results?.length) { const item = data.results[Math.floor(Math.random() * data.results.length)]; await loadContent(item.id, browseType); }
             } catch(e) { console.error(e); } finally { hideLoader(); }
         }
 
         async function renderCard(item, isMovie, isMainItem = false) {
+            // Client-side filtering check
+            // Don't filter main item even if unavailable (user clicked it explicitly)
+            if (hideUnavailable && !isMainItem) {
+                // Check if watch data exists and has flatrate options
+                const hasStream = item.watch && item.watch.flatrate && item.watch.flatrate.length > 0;
+                if (!hasStream) return; // Skip rendering
+            }
+
             const title = item.title || item.name;
             const year = (item.release_date || item.first_air_date || "").substring(0, 4);
             const posterSrc = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'placeholder.jpg';
@@ -809,18 +875,18 @@
         }
 
         // --- Data Fetchers & Helpers ---
-        async function loadGenres(type) { try { const d = await fetchData(`${BASE_API_URL}/genre/${type}/list?api_key=${API_KEY}&language=en-US`); if(d?.genres) { d.genres.forEach(g => { const e = allGenresCache[g.id] || {}; const types = e.types || []; if(!types.includes(type)) types.push(type); allGenresCache[g.id] = { name: g.name, types: types }; }); localStorage.setItem('all_genres_v2', JSON.stringify(allGenresCache)); } } catch(e) {} }
-        async function loadProviders(type) { try { const d = await fetchData(`${BASE_API_URL}/watch/providers/${type}?api_key=${API_KEY}&watch_region=${userRegion}`); if(d?.results) { allProvidersCache[type] = d.results.sort((a, b) => a.display_priority - b.display_priority); localStorage.setItem('all_providers', JSON.stringify(allProvidersCache)); } } catch(e) {} }
+        async function loadGenres(type) { try { const d = await fetchData(`${BASE_API_URL}/genre/${type}/list?language=en-US`); if(d?.genres) { d.genres.forEach(g => { const e = allGenresCache[g.id] || {}; const types = e.types || []; if(!types.includes(type)) types.push(type); allGenresCache[g.id] = { name: g.name, types: types }; }); localStorage.setItem('all_genres_v2', JSON.stringify(allGenresCache)); } } catch(e) {} }
+        async function loadProviders(type) { try { const d = await fetchData(`${BASE_API_URL}/watch/providers/${type}?watch_region=${userRegion}`); if(d?.results) { allProvidersCache[type] = d.results.sort((a, b) => a.display_priority - b.display_priority); localStorage.setItem('all_providers', JSON.stringify(allProvidersCache)); } } catch(e) {} }
         
         async function fetchData(url) { if (apiCache[url]) return apiCache[url]; try { const r = await fetch(url); if (!r.ok) throw new Error(r.statusText); const d = await r.json(); apiCache[url] = d; return d; } catch (e) { return null; } }
         async function detectUserRegion() { const c = localStorage.getItem('userRegion'); if (c) { userRegion = c; return; } try { const r = await fetch('https://ipapi.co/json/'); const d = await r.json(); userRegion = d.country_code || 'US'; localStorage.setItem('userRegion', userRegion); } catch (e) { userRegion = 'US'; } }
-        async function getItemData(type, id) { return await fetchData(`${BASE_API_URL}/${type}/${id}?api_key=${API_KEY}`); }
-        async function getWatchProviders(id, type) { return (await fetchData(`${BASE_API_URL}/${type}/${id}/watch/providers?api_key=${API_KEY}`))?.results; }
+        async function getItemData(type, id) { return await fetchData(`${BASE_API_URL}/${type}/${id}`); }
+        async function getWatchProviders(id, type) { return (await fetchData(`${BASE_API_URL}/${type}/${id}/watch/providers`))?.results; }
         function getWatchData(providers) { return { link: providers?.[userRegion]?.link, flatrate: providers?.[userRegion]?.flatrate }; }
-        async function getCredits(id, type) { return await fetchData(`${BASE_API_URL}/${type}/${id}/credits?api_key=${API_KEY}`); }
-        async function getMovieSuggestions(query) { return (await fetchData(`${BASE_API_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}`))?.results || []; }
-        async function searchActors(name) { return (await fetchData(`${BASE_API_URL}/search/person?api_key=${API_KEY}&query=${encodeURIComponent(name)}`))?.results; }
-        async function getActorCredits(id) { return await fetchData(`${BASE_API_URL}/person/${id}/combined_credits?api_key=${API_KEY}`); }
+        async function getCredits(id, type) { return await fetchData(`${BASE_API_URL}/${type}/${id}/credits`); }
+        async function getMovieSuggestions(query) { return (await fetchData(`${BASE_API_URL}/search/multi?query=${encodeURIComponent(query)}`))?.results || []; }
+        async function searchActors(name) { return (await fetchData(`${BASE_API_URL}/search/person?query=${encodeURIComponent(name)}`))?.results; }
+        async function getActorCredits(id) { return await fetchData(`${BASE_API_URL}/person/${id}/combined_credits`); }
         async function getGenreNames(ids, isMovie) { if (!ids || !ids.length) return []; return ids.map(id => allGenresCache[id]?.name).filter(n => n); }
 
         window.loadContent = loadContent;
@@ -834,7 +900,7 @@
         async function playTrailer(id, title, type) {
             showToast("Fetching trailer...", "info");
             try {
-                const data = await fetchData(`${BASE_API_URL}/${type}/${id}/videos?api_key=${API_KEY}`);
+                const data = await fetchData(`${BASE_API_URL}/${type}/${id}/videos`);
                 const video = data?.results?.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
                 if (video) openVideoModal(video.key, title);
                 else window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(title + " " + type + " trailer")}`, '_blank');
