@@ -179,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <!-- Logo -->
-                <div class="flex-shrink-0 cursor-pointer" onclick="location.reload()">
+                <div class="flex-shrink-0 cursor-pointer" onclick="goHome()">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-clapperboard text-brand-accent text-3xl"></i>
                         <span class="font-bold text-xl tracking-tight text-white">WhatToWatch<span class="text-brand-accent">Next</span></span>
@@ -337,7 +337,11 @@
     <!-- Footer -->
     <footer class="border-t border-white/5 py-8 mt-auto bg-slate-900/50">
         <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-slate-500 text-sm">&copy; 2025 What To Watch Next. Powered by TMDB.</p>
+            <div class="flex flex-col items-center justify-center gap-2">
+                <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="TMDB Logo" class="h-4 mb-2 opacity-70">
+                <p class="text-slate-500 text-xs">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+                <p class="text-slate-600 text-xs mt-4">&copy; 2025 What To Watch Next.</p>
+            </div>
         </div>
     </footer>
 
@@ -356,6 +360,9 @@
         let currentSearchType = 'movie'; // Context for Search Bar
         let browseType = 'movie'; // Context for Browse Toolbar
         let currentViewMode = 'discover'; // 'discover', 'search_results', 'item_details', 'filmography', 'watchlist'
+        let previousViewMode = 'discover'; // For back button logic
+        let savedListPage = 1; // To restore pagination on back
+        
         let currentSearchId = null; 
         let currentQuery = ''; 
         let currentPage = 1;
@@ -373,6 +380,17 @@
         let allProvidersCache = JSON.parse(localStorage.getItem('all_providers')) || {};
         let watchlist = JSON.parse(localStorage.getItem('my_watchlist')) || [];
         let inputTimeoutId;
+
+        // Lazy Loader (Intersection Observer)
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    loadSingleImage(img);
+                    observer.unobserve(img);
+                }
+            });
+        }, { rootMargin: "50px" });
 
         // --- DOM Elements ---
         const movieInput = document.getElementById('movieInput');
@@ -393,6 +411,22 @@
 
         // --- Initialization ---
         document.addEventListener("DOMContentLoaded", async () => {
+            // Compliance: Check cache age and clear if > 7 days to prevent stale availability data
+            const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 Days in milliseconds
+            const lastCacheTime = localStorage.getItem('cache_timestamp');
+            
+            if (!lastCacheTime || Date.now() - parseInt(lastCacheTime) > CACHE_DURATION) {
+                console.log("Refreshing stale cache for compliance...");
+                // Clear API-derived data only (keep user settings/watchlist)
+                localStorage.removeItem('all_genres_v2');
+                localStorage.removeItem('all_providers');
+                // Reset in-memory vars
+                allGenresCache = {};
+                allProvidersCache = {};
+                // Update timestamp
+                localStorage.setItem('cache_timestamp', Date.now().toString());
+            }
+
             await detectUserRegion();
             regionDisplay.textContent = userRegion;
             unavailableToggle.checked = hideUnavailable; // Set initial state
@@ -405,6 +439,15 @@
 
             setupCustomDropdowns();
             refreshDropdowns();
+
+            // Handle browser back button
+            window.onpopstate = (event) => {
+                if (event.state) {
+                    restoreState(event.state);
+                } else {
+                    goHome();
+                }
+            };
 
             // Initial load
             runDiscovery();
@@ -600,6 +643,50 @@
             }
         });
 
+        // --- Navigation Logic ---
+
+        function goHome() {
+            movieInput.value = '';
+            currentViewMode = 'discover';
+            currentPage = 1;
+            runDiscovery();
+        }
+
+        function handleBack() {
+            // Restore previous mode state
+            resultsContainer.innerHTML = '';
+            loadMoreContainer.classList.add('hidden');
+            
+            if (previousViewMode === 'discover') {
+                currentViewMode = 'discover';
+                currentPage = 1; 
+                runDiscovery();
+            } else if (previousViewMode === 'search_results') {
+                currentViewMode = 'search_results';
+                currentPage = 1; // Reset to page 1 of results
+                performTextSearch(currentQuery, false);
+            } else if (previousViewMode === 'watchlist') {
+                showWatchlist();
+            } else if (previousViewMode === 'filmography') {
+                // Restore filmography view (resets to page 1 of credits)
+                currentViewMode = 'filmography';
+                currentPage = 1; 
+                renderFilmographyBatch();
+            } else {
+                goHome();
+            }
+        }
+
+        // Browser Back Button Support
+        function restoreState(state) {
+            if (!state) return;
+            if (state.mode === 'item_details') {
+                loadContent(state.id, state.type, false); // false = don't push state again
+            } else if (state.mode === 'discover') {
+                goHome();
+            }
+        }
+
         // --- Core Functions ---
 
         async function runDiscovery(isLoadMore = false) {
@@ -616,21 +703,21 @@
             
             // Apply Multi-select Filters
             if (selectedGenres.size > 0) {
-                url += `&with_genres=${Array.from(selectedGenres).join('|')}`; // Pipe = OR logic for genres
+                url += `&with_genres=${Array.from(selectedGenres).join('|')}`;
             }
             
             if (selectedProviders.size > 0) {
                 url += `&with_watch_providers=${Array.from(selectedProviders).join('|')}&watch_region=${userRegion}`;
             }
 
-            // Decade Logic (Range calculation)
+            // Decade Logic
             if (selectedDecades.size > 0) {
                 const decadesArray = Array.from(selectedDecades).map(Number);
                 const minDecade = Math.min(...decadesArray);
                 const maxDecade = Math.max(...decadesArray);
                 
                 const startDate = `${minDecade}-01-01`;
-                const endDate = `${maxDecade + 9}-12-31`; // Cover the full last decade
+                const endDate = `${maxDecade + 9}-12-31`;
                 
                 if (type === 'movie') {
                     url += `&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDate}`;
@@ -642,8 +729,6 @@
                  url += `&primary_release_date.lte=${today}`;
             }
             
-            // API-level filtering for Unavailable content (Optimization)
-            // This prevents "empty pages" in discovery mode
             if (hideUnavailable) {
                 url += `&with_watch_monetization_types=flatrate|free|ads&watch_region=${userRegion}`;
             }
@@ -651,7 +736,10 @@
             try {
                 const data = await fetchData(url);
                 if (data && data.results) {
-                    if (!isLoadMore) {
+                    // Safety check: Only append header if one doesn't already exist or we are reloading the view
+                    const existingHeader = resultsContainer.querySelector('h2');
+                    
+                    if (!isLoadMore && !existingHeader) {
                          const header = document.createElement('div');
                          header.className = "col-span-full mb-4";
                          const sortLabel = sortSelect.options[sortSelect.selectedIndex].text;
@@ -688,6 +776,7 @@
                 if (currentSearchType === 'actor' || currentSearchType === 'director') {
                     const people = await searchActors(query);
                     if (people && people.length > 0) {
+                        currentViewMode = 'filmography'; // Set mode so back button knows
                         if(currentSearchType === 'director') {
                             const directors = people.filter(p => p.known_for_department === 'Directing');
                             if(directors.length > 0) displayActorResults(directors); else showToast("No directors.", "error");
@@ -709,8 +798,19 @@
             } catch (e) { console.error(e); }
         }
 
-        async function loadContent(id, type) {
+        async function loadContent(id, type, pushHistory = true) {
             if (!id) return;
+            
+            // Save state before transition if we aren't already in details
+            if (currentViewMode !== 'item_details') {
+                previousViewMode = currentViewMode;
+                savedListPage = currentPage; // Save the page number of the list we are leaving
+            }
+
+            if (pushHistory) {
+                history.pushState({ mode: 'item_details', id: id, type: type }, '', `#${type}/${id}`);
+            }
+
             currentSearchId = id; currentSearchType = type; currentViewMode = 'item_details'; currentPage = 1;
             resultsContainer.innerHTML = ''; loadMoreContainer.classList.add('hidden'); showLoader();
             try {
@@ -718,7 +818,10 @@
                 if (!searchedItem) { showToast("Error loading item.", "error"); return; }
                 const providers = await getWatchProviders(id, type);
                 searchedItem.watch = getWatchData(providers);
-                resultsContainer.innerHTML = `<div class="col-span-full mb-2 flex justify-between items-end"><h2 class="text-2xl font-bold text-white border-l-4 border-brand-accent pl-3">Selected Title</h2><button onclick="searchContent()" class="text-sm text-slate-400 hover:text-white underline">Back</button></div>`;
+                
+                // Back button now calls handleBack() instead of searchContent()
+                resultsContainer.innerHTML = `<div class="col-span-full mb-2 flex justify-between items-end"><h2 class="text-2xl font-bold text-white border-l-4 border-brand-accent pl-3">Selected Title</h2><button onclick="handleBack()" class="text-sm text-slate-400 hover:text-white underline"><i class="fa-solid fa-arrow-left"></i> Back to List</button></div>`;
+                
                 await renderCard(searchedItem, type === 'movie', true);
                 await fetchAndDisplayRecommendations(type, id, 1, false);
             } catch (e) { console.error(e); } finally { hideLoader(); }
@@ -832,8 +935,9 @@
             `;
             card.innerHTML = innerHTML;
             resultsContainer.appendChild(card);
+            
             const img = card.querySelector('img[data-src]');
-            if(img) loadSingleImage(img);
+            if(img) imageObserver.observe(img);
         }
 
         // ... [Standard Helpers: fetchData, displayActorResults, loadFilmography, renderFilmographyBatch, etc. same as before] ...
@@ -850,8 +954,14 @@
         }
         
         async function loadFilmography(id, name, isDirector) {
-            showLoader(); currentViewMode = 'filmography'; currentPage = 1;
-            resultsContainer.innerHTML = `<div class="col-span-full text-center py-4"><h2 class="text-2xl text-white">Filmography for <span class="text-brand-accent">${name}</span></h2><button onclick="runDiscovery()" class="text-sm text-slate-400 hover:text-white underline mt-2">Back to Browse</button></div>`;
+            showLoader(); 
+            // Save state before transition
+            if (currentViewMode !== 'filmography') {
+                previousViewMode = currentViewMode;
+            }
+            
+            currentViewMode = 'filmography'; currentPage = 1;
+            resultsContainer.innerHTML = `<div class="col-span-full text-center py-4"><h2 class="text-2xl text-white">Filmography for <span class="text-brand-accent">${name}</span></h2><button onclick="handleBack()" class="text-sm text-slate-400 hover:text-white underline mt-2">Back to List</button></div>`;
             loadMoreContainer.classList.add('hidden'); 
             try { const credits = await getActorCredits(id);
                 if(credits) {
@@ -889,7 +999,10 @@
         async function getActorCredits(id) { return await fetchData(`${BASE_API_URL}/person/${id}/combined_credits`); }
         async function getGenreNames(ids, isMovie) { if (!ids || !ids.length) return []; return ids.map(id => allGenresCache[id]?.name).filter(n => n); }
 
+        // Globals
         window.loadContent = loadContent;
+        window.handleBack = handleBack;
+        window.goHome = goHome;
         window.triggerSearch = (title, type) => { movieInput.value = title; currentSearchType = type === 'movie' || type === 'tv' ? type : 'actor'; searchTypeSelect.value = currentSearchType; window.scrollTo({ top: 0, behavior: 'smooth' }); searchContent(); };
         function showLoader() { loader.classList.remove('hidden'); }
         function hideLoader() { loader.classList.add('hidden'); }
