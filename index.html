@@ -846,6 +846,45 @@
             } catch(e) { console.error(e); } finally { hideLoader(); }
         }
 
+        function renderSuggestions(suggestions) {
+            suggestionsList.innerHTML = '';
+            if (!suggestions || suggestions.length === 0) {
+                suggestionsList.innerHTML = '<li class="px-4 py-3 text-slate-400 text-sm">No results found</li>';
+                suggestionsList.classList.remove('hidden');
+                return;
+            }
+
+            suggestions.slice(0, 8).forEach(item => {
+                const title = item.title || item.name;
+                const year = (item.release_date || item.first_air_date || "").substring(0, 4);
+                const type = item.media_type === 'movie' ? 'Movie' : item.media_type === 'tv' ? 'TV' : 'Person';
+                
+                const li = document.createElement('li');
+                li.className = "px-4 py-3 hover:bg-white/10 cursor-pointer flex justify-between items-center transition-colors border-b border-white/5 last:border-none";
+                li.innerHTML = `
+                    <span class="text-white text-sm font-medium truncate pr-4">${title}</span>
+                    <span class="text-xs text-slate-400 bg-black/30 px-2 py-1 rounded">${type} ${year ? `(${year})` : ''}</span>
+                `;
+                li.onclick = () => {
+                    movieInput.value = title;
+                    suggestionsList.classList.add('hidden');
+                    
+                    if(item.media_type && item.media_type !== 'person') {
+                        currentSearchType = item.media_type;
+                        searchTypeSelect.value = item.media_type;
+                        loadContent(item.id, item.media_type);
+                    } else if (item.media_type === 'person') {
+                        currentSearchType = 'actor'; 
+                        searchContent();
+                    } else {
+                        searchContent();
+                    }
+                };
+                suggestionsList.appendChild(li);
+            });
+            suggestionsList.classList.remove('hidden');
+        }
+
         async function renderCard(item, isMovie, isMainItem = false) {
             // Client-side filtering check
             // Don't filter main item even if unavailable (user clicked it explicitly)
@@ -1025,6 +1064,49 @@
         }
         function closeVideoModal() { videoModal.classList.add('hidden'); videoContainer.innerHTML = ''; }
         videoModal.addEventListener('click', (e) => { if (e.target === videoModal) closeVideoModal(); });
+
+        // Watchlist Functions (added back in)
+        function toggleWatchlist(id, title, poster, type, rating, year, btn) {
+            const index = watchlist.findIndex(item => item.id === id);
+            const icon = btn.querySelector('i');
+            
+            if (index === -1) {
+                watchlist.push({ id, title, poster_path: poster === 'null' ? null : poster, media_type: type, vote_average: rating, release_date: year });
+                icon.classList.remove('text-white/50');
+                icon.classList.add('text-red-500');
+                showToast("Added to Watchlist", "success");
+            } else {
+                watchlist.splice(index, 1);
+                icon.classList.add('text-white/50');
+                icon.classList.remove('text-red-500');
+                showToast("Removed from Watchlist", "info");
+                
+                if (currentViewMode === 'watchlist') {
+                    showWatchlist();
+                }
+            }
+            localStorage.setItem('my_watchlist', JSON.stringify(watchlist));
+        }
+
+        function showWatchlist() {
+            currentViewMode = 'watchlist';
+            resultsContainer.innerHTML = '';
+            loadMoreContainer.classList.add('hidden');
+            
+            const header = document.createElement('div');
+            header.className = "col-span-full mb-4";
+            header.innerHTML = `<h2 class="text-2xl font-bold text-white"><span class="text-brand-accent">My Watchlist</span> (${watchlist.length})</h2>`;
+            resultsContainer.appendChild(header);
+
+            if (watchlist.length === 0) {
+                resultsContainer.innerHTML += `<div class="col-span-full text-center py-10 text-slate-500">Your watchlist is empty. Go add some movies!</div>`;
+                return;
+            }
+
+            watchlist.forEach(item => {
+                renderCard(item, item.media_type === 'movie', false);
+            });
+        }
 
     </script>
 </body>
