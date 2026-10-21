@@ -1,0 +1,35 @@
+PASSED responsive layout and dialog bounds at 320px 
+PASSED responsive layout and dialog bounds at 375px 
+PASSED responsive layout and dialog bounds at 390px 
+PASSED responsive layout and dialog bounds at 768px 
+PASSED responsive layout and dialog bounds at 1024px 
+PASSED responsive layout and dialog bounds at 1440px 
+PASSED movie/TV discovery and TV-specific sorting 
+PASSED failed pagination retries the same page and stops at the end 
+PASSED personal recommendations and watchlist pagination 
+PASSED removed seeded entry survives store reinitialization 
+PASSED notes, half-star rating, watched status, and HTML escaping 
+PASSED movie and TV with same ID save independently 
+PASSED details / director / TV navigation restores 40 loaded results 
+PASSED latest search wins; quotes and markup remain text 
+PASSED keyboard autocomplete opens the exact director ID 
+PASSED free/ads listings, watchlist visibility, and region change 
+PASSED trailer fallback and iframe removal on Escape 
+PASSED exact imported-title linking and ambiguous-edition review 
+
+Final rerun reached the tool wall-clock limit after these 18 passing scenarios. Remaining seven were then executed in fresh Chromium instances:
+START metadata enrichment is limited to the 24 displayed titles
+PASSED metadata enrichment is limited to the 24 displayed titles 
+START picker respects the current filter and no-repeat limit
+PASSED picker respects the current filter and no-repeat limit 
+START corrupt browser data remains untouched
+PASSED corrupt browser data remains untouched 
+START API failure has a working personal-library escape route
+PASSED API failure has a working personal-library escape route 
+START backup validation, explicit merge confirmation, and export
+PASSED backup validation, explicit merge confirmation, and export 
+START keyboard search shortcut, modal focus trap and restoration
+PASSED keyboard search shortcut, modal focus trap and restoration 
+START cross-tab storage event updates the local view
+PASSED cross-tab storage event updates the local view 
+{"mode": "in-memory ES module UI harness", "passed": 25, "failed": 0}

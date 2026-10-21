@@ -1,0 +1,285 @@
+{
+  "sourceArchive": "movies.zip",
+  "checks": [
+    {
+      "check": "Unique HTML IDs",
+      "passed": true,
+      "detail": "45"
+    },
+    {
+      "check": "No inline style or event attributes",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Only local external module entrypoint",
+      "passed": true,
+      "detail": "[{'type': 'module', 'src': './js/app.js'}]"
+    },
+    {
+      "check": "CSP includes strict script/style and existing API origin",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "All HTML runtime asset references exist",
+      "passed": true,
+      "detail": "./favicon.ico, ./apple-touch-icon.png, ./site.webmanifest, ./style.css, ./js/app.js"
+    },
+    {
+      "check": "Relative manifest paths and original icons",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference api.js ./config.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference api.js ./core.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "No dynamic HTML/code execution in api.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JS parse api.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "No dynamic HTML/code execution in config.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JS parse config.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference store.js ./config.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference store.js ./core.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "No dynamic HTML/code execution in store.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JS parse store.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference app.js ./api.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference app.js ./store.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference app.js ./config.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Module reference app.js ./core.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "No dynamic HTML/code execution in app.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JS parse app.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "No dynamic HTML/code execution in core.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JS parse core.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JS parse sw.js",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JS parse tools/serve.mjs",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Original asset retained: web-app-manifest-192x192.png",
+      "passed": true,
+      "detail": "cd038895f12a944e03bcc7136ee6307039263073c2f9fcf8ef85e82bbea5b4e7"
+    },
+    {
+      "check": "Original asset retained: title_logo.png",
+      "passed": true,
+      "detail": "dfa7d3ac7ba4e75f599363bb1d0ed815434823ded97bb200e4d304129ee39b28"
+    },
+    {
+      "check": "Original asset retained: web-app-manifest-512x512.png",
+      "passed": true,
+      "detail": "ebf6de969fb78924c9c4e1e3095ccda9997d37ed3f7979cce831effaca282a74"
+    },
+    {
+      "check": "Original asset retained: default-provider-logo.png",
+      "passed": true,
+      "detail": "275ab46bdff0ec2cf99a8c184c18c358ff9946c7c17bbfcf2993ac97048e1742"
+    },
+    {
+      "check": "Original asset retained: placeholder.jpg",
+      "passed": true,
+      "detail": "8bc0c403446b983bddadb7e11dfc18ce3f9b46eb175747ed008cf0cc5f6443c1"
+    },
+    {
+      "check": "Original asset retained: apple-touch-icon.png",
+      "passed": true,
+      "detail": "d43cadbc1af38e3ece077ec424fb6a179756b2acb2c60f4f70f7466343f5d414"
+    },
+    {
+      "check": "Original asset retained: favicon-96x96.png",
+      "passed": true,
+      "detail": "b0666729525aa4953c9ce51c0099177c64ae9ea7e5078ce5b377d498a44f7253"
+    },
+    {
+      "check": "Original asset retained: favicon.svg",
+      "passed": true,
+      "detail": "83be1431313f0dc2bcdf47a980345a8ee0cb60a293ae9ff0eba3f2bc9e732000"
+    },
+    {
+      "check": "Original asset retained: favicon.ico",
+      "passed": true,
+      "detail": "97d867b1404bde1f52bad117475abc749f4999727d9745d64665e24267b16790"
+    },
+    {
+      "check": "Blank original domain file omitted",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Original API endpoint preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Collection counts",
+      "passed": true,
+      "detail": "{\"recommendations\": 210, \"saved\": 148, \"rated\": 2452, \"unique\": 2662}"
+    },
+    {
+      "check": "Static HTTP delivery index.html",
+      "passed": true,
+      "detail": "text/html; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery style.css",
+      "passed": true,
+      "detail": "text/css; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery js/app.js",
+      "passed": true,
+      "detail": "text/javascript; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery js/core.js",
+      "passed": true,
+      "detail": "text/javascript; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery js/store.js",
+      "passed": true,
+      "detail": "text/javascript; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery js/api.js",
+      "passed": true,
+      "detail": "text/javascript; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery js/config.js",
+      "passed": true,
+      "detail": "text/javascript; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery data/library.json",
+      "passed": true,
+      "detail": "application/json; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery site.webmanifest",
+      "passed": true,
+      "detail": "application/manifest+json"
+    },
+    {
+      "check": "Static HTTP delivery sw.js",
+      "passed": true,
+      "detail": "text/javascript; charset=utf-8"
+    },
+    {
+      "check": "Static HTTP delivery favicon.ico",
+      "passed": true,
+      "detail": "image/x-icon"
+    },
+    {
+      "check": "CSS top-level parsing",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current UI scenarios completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Runtime module delivery uses no remote dependency",
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "passed": 52,
+  "failed": 0,
+  "retainedOriginalAssets": [
+    "web-app-manifest-192x192.png",
+    "title_logo.png",
+    "web-app-manifest-512x512.png",
+    "default-provider-logo.png",
+    "placeholder.jpg",
+    "apple-touch-icon.png",
+    "favicon-96x96.png",
+    "favicon.svg",
+    "favicon.ico"
+  ],
+  "counts": {
+    "recommendations": 210,
+    "saved": 148,
+    "rated": 2452,
+    "unique": 2662
+  },
+  "boundary": "Static HTTP via urllib, JS/CSS parsing and asset checks. Not browser HTTP, CSP enforcement, real storage, service-worker or live API validation."
+}

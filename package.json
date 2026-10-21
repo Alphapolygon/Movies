@@ -1,0 +1,6 @@
+{
+  "name": "what-to-watch-next", "version": "3.0.0", "private": true, "type": "module",
+  "description": "Updated original TMDB-powered movies.zip application",
+  "scripts": { "start": "node tools/serve.mjs", "test": "node --test tests/*.test.mjs", "check": "node --check js/app.js && node --check js/core.js && node --check js/api.js && node --check js/store.js" },
+  "engines": { "node": ">=20" }
+}

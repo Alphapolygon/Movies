@@ -1,0 +1,314 @@
+
+> what-to-watch-next@3.0.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: request concurrency is bounded
+ok 1 - request concurrency is bounded
+  ---
+  duration_ms: 23.808631
+  type: 'test'
+  ...
+# Subtest: queued aborted work does not start
+ok 2 - queued aborted work does not start
+  ---
+  duration_ms: 10.829757
+  type: 'test'
+  ...
+# Subtest: same-view duplicate requests share one network response and then cache
+ok 3 - same-view duplicate requests share one network response and then cache
+  ---
+  duration_ms: 36.5971
+  type: 'test'
+  ...
+# Subtest: HTTP errors surface and failures are never cached
+ok 4 - HTTP errors surface and failures are never cached
+  ---
+  duration_ms: 2.521493
+  type: 'test'
+  ...
+# Subtest: malformed successful bodies are rejected
+ok 5 - malformed successful bodies are rejected
+  ---
+  duration_ms: 2.6104
+  type: 'test'
+  ...
+# Subtest: timeouts abort transport and yield an actionable error
+ok 6 - timeouts abort transport and yield an actionable error
+  ---
+  duration_ms: 11.018188
+  type: 'test'
+  ...
+# Subtest: abort signals are isolated between views
+ok 7 - abort signals are isolated between views
+  ---
+  duration_ms: 26.452665
+  type: 'test'
+  ...
+# Subtest: cache has a hard entry bound and does not swallow forbidden requests
+ok 8 - cache has a hard entry bound and does not swallow forbidden requests
+  ---
+  duration_ms: 57.243991
+  type: 'test'
+  ...
+# Subtest: expired responses are fetched again
+ok 9 - expired responses are fetched again
+  ---
+  duration_ms: 5.731045
+  type: 'test'
+  ...
+# Subtest: movie and TV IDs live in separate namespaces
+ok 10 - movie and TV IDs live in separate namespaces
+  ---
+  duration_ms: 2.862229
+  type: 'test'
+  ...
+# Subtest: titles with different years do not collide
+ok 11 - titles with different years do not collide
+  ---
+  duration_ms: 2.182026
+  type: 'test'
+  ...
+# Subtest: unicode accents and punctuation normalize without executable strings
+ok 12 - unicode accents and punctuation normalize without executable strings
+  ---
+  duration_ms: 0.861344
+  type: 'test'
+  ...
+# Subtest: one explicit source alias merges A Silent Voice, without dropping its year
+ok 13 - one explicit source alias merges A Silent Voice, without dropping its year
+  ---
+  duration_ms: 0.19626
+  type: 'test'
+  ...
+# Subtest: safe URLs reject javascript, credentials, and lookalike hosts
+ok 14 - safe URLs reject javascript, credentials, and lookalike hosts
+  ---
+  duration_ms: 0.381355
+  type: 'test'
+  ...
+# Subtest: poster paths cannot change origins, inject markup, or traverse paths
+ok 15 - poster paths cannot change origins, inject markup, or traverse paths
+  ---
+  duration_ms: 0.544008
+  type: 'test'
+  ...
+# Subtest: normalization validates IDs and does not coerce null poster strings
+ok 16 - normalization validates IDs and does not coerce null poster strings
+  ---
+  duration_ms: 0.679341
+  type: 'test'
+  ...
+# Subtest: TV newest uses first_air_date sort and bounds
+ok 17 - TV newest uses first_air_date sort and bounds
+  ---
+  duration_ms: 0.450078
+  type: 'test'
+  ...
+# Subtest: movie newest uses primary_release_date
+ok 18 - movie newest uses primary_release_date
+  ---
+  duration_ms: 1.65084
+  type: 'test'
+  ...
+# Subtest: nonadjacent decades are exactly filtered, not the whole interval
+ok 19 - nonadjacent decades are exactly filtered, not the whole interval
+  ---
+  duration_ms: 1.155198
+  type: 'test'
+  ...
+# Subtest: date bounds never include future release dates
+ok 20 - date bounds never include future release dates
+  ---
+  duration_ms: 0.477447
+  type: 'test'
+  ...
+# Subtest: streaming filters include subscription, free and ads, with region
+ok 21 - streaming filters include subscription, free and ads, with region
+  ---
+  duration_ms: 0.29711
+  type: 'test'
+  ...
+# Subtest: provider alternatives use OR and all-access supports rentals
+ok 22 - provider alternatives use OR and all-access supports rentals
+  ---
+  duration_ms: 0.87992
+  type: 'test'
+  ...
+# Subtest: missing availability data is an error, not a false unavailable result
+ok 23 - missing availability data is an error, not a false unavailable result
+  ---
+  duration_ms: 0.327953
+  type: 'test'
+  ...
+# Subtest: free and ads are real stream options; region data is not shared
+ok 24 - free and ads are real stream options; region data is not shared
+  ---
+  duration_ms: 1.322397
+  type: 'test'
+  ...
+# Subtest: exact resolver rejects wrong-year / fuzzy candidates and surfaces ambiguity
+ok 25 - exact resolver rejects wrong-year / fuzzy candidates and surfaces ambiguity
+  ---
+  duration_ms: 0.81558
+  type: 'test'
+  ...
+# Subtest: deduplication preserves movie/TV with identical numeric IDs
+ok 26 - deduplication preserves movie/TV with identical numeric IDs
+  ---
+  duration_ms: 2.208011
+  type: 'test'
+  ...
+# Subtest: routing round trips quotes, unicode, reserved characters and filters
+ok 27 - routing round trips quotes, unicode, reserved characters and filters
+  ---
+  duration_ms: 2.604402
+  type: 'test'
+  ...
+# Subtest: bad hashes and invalid parameters are safe
+ok 28 - bad hashes and invalid parameters are safe
+  ---
+  duration_ms: 0.88763
+  type: 'test'
+  ...
+# Subtest: sorting never mutates source arrays or assigns absent ratings
+ok 29 - sorting never mutates source arrays or assigns absent ratings
+  ---
+  duration_ms: 0.39758
+  type: 'test'
+  ...
+# Subtest: the shipped seed preserves every source row, with one documented alias merge
+ok 30 - the shipped seed preserves every source row, with one documented alias merge
+  ---
+  duration_ms: 29.846944
+  type: 'test'
+  ...
+# Subtest: seed defaults import a watchlist and ratings without network metadata
+ok 31 - seed defaults import a watchlist and ratings without network metadata
+  ---
+  duration_ms: 2.901403
+  type: 'test'
+  ...
+# Subtest: removing a seeded title persists across reload without reseeding it
+ok 32 - removing a seeded title persists across reload without reseeding it
+  ---
+  duration_ms: 1.68818
+  type: 'test'
+  ...
+# Subtest: movie and TV saves with identical numeric IDs remain independent
+ok 33 - movie and TV saves with identical numeric IDs remain independent
+  ---
+  duration_ms: 2.904804
+  type: 'test'
+  ...
+# Subtest: legacy watchlist and region migrate non-destructively
+ok 34 - legacy watchlist and region migrate non-destructively
+  ---
+  duration_ms: 1.867163
+  type: 'test'
+  ...
+# Subtest: legacy duplicates are removed by typed identity
+ok 35 - legacy duplicates are removed by typed identity
+  ---
+  duration_ms: 1.033066
+  type: 'test'
+  ...
+# Subtest: corrupt v3 storage survives untouched; session remains usable
+ok 36 - corrupt v3 storage survives untouched; session remains usable
+  ---
+  duration_ms: 0.898076
+  type: 'test'
+  ...
+# Subtest: blocked storage never crashes or drops in-memory edits
+ok 37 - blocked storage never crashes or drops in-memory edits
+  ---
+  duration_ms: 4.302401
+  type: 'test'
+  ...
+# Subtest: quota failures are visible and export still works
+ok 38 - quota failures are visible and export still works
+  ---
+  duration_ms: 0.864514
+  type: 'test'
+  ...
+# Subtest: notes and half-star ratings round trip without HTML interpretation
+ok 39 - notes and half-star ratings round trip without HTML interpretation
+  ---
+  duration_ms: 1.030659
+  type: 'test'
+  ...
+# Subtest: marking unwatched clears personal rating but preserves notes and saved state
+ok 40 - marking unwatched clears personal rating but preserves notes and saved state
+  ---
+  duration_ms: 1.534237
+  type: 'test'
+  ...
+# Subtest: exact history matches do not conflate movie and TV
+ok 41 - exact history matches do not conflate movie and TV
+  ---
+  duration_ms: 0.75694
+  type: 'test'
+  ...
+# Subtest: an explicit unwatched override beats a tentative imported history match
+ok 42 - an explicit unwatched override beats a tentative imported history match
+  ---
+  duration_ms: 0.513148
+  type: 'test'
+  ...
+# Subtest: metadata linking preserves imported saved state, key and provenance
+ok 43 - metadata linking preserves imported saved state, key and provenance
+  ---
+  duration_ms: 1.689697
+  type: 'test'
+  ...
+# Subtest: linking a previously saved typed title merges it without duplicates
+ok 44 - linking a previously saved typed title merges it without duplicates
+  ---
+  duration_ms: 0.726815
+  type: 'test'
+  ...
+# Subtest: backup parsing is transactional and rejects broken shapes and invalid ratings
+ok 45 - backup parsing is transactional and rejects broken shapes and invalid ratings
+  ---
+  duration_ms: 0.861232
+  type: 'test'
+  ...
+# Subtest: backup validation rejects duplicate keys, prototypes and impossible fields
+ok 46 - backup validation rejects duplicate keys, prototypes and impossible fields
+  ---
+  duration_ms: 0.41391
+  type: 'test'
+  ...
+# Subtest: backup import keeps unrelated titles and applies confirmed incoming preferences
+ok 47 - backup import keeps unrelated titles and applies confirmed incoming preferences
+  ---
+  duration_ms: 0.690775
+  type: 'test'
+  ...
+# Subtest: cross-tab updates to different titles merge rather than clobber the list
+ok 48 - cross-tab updates to different titles merge rather than clobber the list
+  ---
+  duration_ms: 0.544856
+  type: 'test'
+  ...
+# Subtest: title edits from a stale tab retain the newer streaming settings
+ok 49 - title edits from a stale tab retain the newer streaming settings
+  ---
+  duration_ms: 0.374322
+  type: 'test'
+  ...
+# Subtest: portable backup restores imported defaults without the original seed file
+ok 50 - portable backup restores imported defaults without the original seed file
+  ---
+  duration_ms: 0.761139
+  type: 'test'
+  ...
+1..50
+# tests 50
+# suites 0
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 268.100307

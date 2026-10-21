@@ -1,0 +1,134 @@
+{
+  "mode": "in-memory ES module UI harness",
+  "browser": "Chromium",
+  "executionNote": "The final full rerun hit the tool wall-clock limit after 18 passing scenarios. Remaining seven scenarios were executed in fresh browser instances; no scenario result was inferred.",
+  "results": [
+    {
+      "name": "responsive layout and dialog bounds at 320px",
+      "status": "passed",
+      "seconds": 1.0
+    },
+    {
+      "name": "responsive layout and dialog bounds at 375px",
+      "status": "passed",
+      "seconds": 0.77
+    },
+    {
+      "name": "responsive layout and dialog bounds at 390px",
+      "status": "passed",
+      "seconds": 1.22
+    },
+    {
+      "name": "responsive layout and dialog bounds at 768px",
+      "status": "passed",
+      "seconds": 0.65
+    },
+    {
+      "name": "responsive layout and dialog bounds at 1024px",
+      "status": "passed",
+      "seconds": 0.66
+    },
+    {
+      "name": "responsive layout and dialog bounds at 1440px",
+      "status": "passed",
+      "seconds": 1.0
+    },
+    {
+      "name": "movie/TV discovery and TV-specific sorting",
+      "status": "passed",
+      "seconds": 1.6
+    },
+    {
+      "name": "failed pagination retries the same page and stops at the end",
+      "status": "passed",
+      "seconds": 1.11
+    },
+    {
+      "name": "personal recommendations and watchlist pagination",
+      "status": "passed",
+      "seconds": 0.86
+    },
+    {
+      "name": "removed seeded entry survives store reinitialization",
+      "status": "passed",
+      "seconds": 1.5
+    },
+    {
+      "name": "notes, half-star rating, watched status, and HTML escaping",
+      "status": "passed",
+      "seconds": 0.76
+    },
+    {
+      "name": "movie and TV with same ID save independently",
+      "status": "passed",
+      "seconds": 1.03
+    },
+    {
+      "name": "details / director / TV navigation restores 40 loaded results",
+      "status": "passed",
+      "seconds": 1.58
+    },
+    {
+      "name": "latest search wins; quotes and markup remain text",
+      "status": "passed",
+      "seconds": 1.24
+    },
+    {
+      "name": "keyboard autocomplete opens the exact director ID",
+      "status": "passed",
+      "seconds": 1.11
+    },
+    {
+      "name": "free/ads listings, watchlist visibility, and region change",
+      "status": "passed",
+      "seconds": 1.99
+    },
+    {
+      "name": "trailer fallback and iframe removal on Escape",
+      "status": "passed",
+      "seconds": 1.02
+    },
+    {
+      "name": "exact imported-title linking and ambiguous-edition review",
+      "status": "passed",
+      "seconds": 0.81
+    },
+    {
+      "name": "metadata enrichment is limited to the 24 displayed titles",
+      "status": "passed",
+      "seconds": 1.3
+    },
+    {
+      "name": "picker respects the current filter and no-repeat limit",
+      "status": "passed",
+      "seconds": 0.84
+    },
+    {
+      "name": "corrupt browser data remains untouched",
+      "status": "passed",
+      "seconds": 0.79
+    },
+    {
+      "name": "API failure has a working personal-library escape route",
+      "status": "passed",
+      "seconds": 0.88
+    },
+    {
+      "name": "backup validation, explicit merge confirmation, and export",
+      "status": "passed",
+      "seconds": 1.6
+    },
+    {
+      "name": "keyboard search shortcut, modal focus trap and restoration",
+      "status": "passed",
+      "seconds": 1.05
+    },
+    {
+      "name": "cross-tab storage event updates the local view",
+      "status": "passed",
+      "seconds": 0.79
+    }
+  ],
+  "passed": 25,
+  "failed": 0
+}

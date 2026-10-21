@@ -1,0 +1,4 @@
+
+> what-to-watch-next@3.0.0 check
+> node --check js/app.js && node --check js/core.js && node --check js/api.js && node --check js/store.js
+
