@@ -176,7 +176,7 @@ p {
   color:var(--accent)
 }
 .brand small {
-  font-size:10px;
+  font-size:12px;
   font-weight:450;
   letter-spacing:.1px;
   color:var(--muted);
@@ -204,7 +204,7 @@ p {
   color:#c5bbff
 }
 .nav-count {
-  font-size:10px;
+  font-size:12px;
   color:#c3b8ff;
   border:1px solid #8c79de48;
   background:#9683ec16;
@@ -260,7 +260,7 @@ main {
   padding:32px 12px 44px
 }
 .eyebrow {
-  font-size:10px;
+  font-size:12px;
   letter-spacing:2px;
   font-weight:750;
   color:var(--accent);
@@ -343,7 +343,7 @@ main {
 .button.small {
   min-height:40px;
   padding:8px 11px;
-  font-size:11px
+  font-size:12px
 }
 .text-link {
   font-size:12px;
@@ -366,7 +366,7 @@ main {
   width:100%
 }
 .tonight-card .eyebrow {
-  font-size:9px;
+  font-size:12px;
   letter-spacing:1.6px;
   color:#b4abdb
 }
@@ -398,7 +398,7 @@ main {
   background:#cfbde9;
   padding:13px 18px;
   letter-spacing:2px;
-  font-size:9px;
+  font-size:12px;
   line-height:1.1;
   box-shadow:0 8px 26px #0003;
   border-radius:7px 0 0 7px;
@@ -411,7 +411,7 @@ main {
   margin-top:3px
 }
 .ticket>span {
-  font-size:7px;
+  font-size:12px;
   display:block;
   letter-spacing:1px;
   margin-top:8px
@@ -419,7 +419,7 @@ main {
 .ticket-stub {
   background:#d7c9e9;
   color:#312140;
-  font-size:8px;
+  font-size:12px;
   letter-spacing:1px;
   padding:18px 14px;
   border-left:2px dashed #927baf;
@@ -506,7 +506,7 @@ main {
 #suggestions small {
   color:#b9c2d6;
   flex-shrink:0;
-  font-size:10px
+  font-size:12px
 }
 .library-summary {
   display:flex;
@@ -516,7 +516,7 @@ main {
   padding:15px 3px 26px;
   border-bottom:1px solid #ffffff0c;
   color:var(--muted);
-  font-size:11px
+  font-size:12px
 }
 .library-summary strong {
   color:#d5dbed;
@@ -526,7 +526,7 @@ main {
 .library-summary .seed-link {
   margin-left:auto;
   color:var(--accent);
-  font-size:11px
+  font-size:12px
 }
 .section-heading {
   display:flex;
@@ -536,7 +536,7 @@ main {
   padding:29px 0 17px
 }
 .section-heading .eyebrow {
-  font-size:9px;
+  font-size:12px;
   margin-bottom:7px
 }
 .section-heading h2 {
@@ -580,7 +580,7 @@ main {
   color:var(--muted);
   min-height:37px;
   padding:7px 15px;
-  font-size:11px;
+  font-size:12px;
   font-weight:650;
   border-radius:7px
 }
@@ -597,7 +597,7 @@ main {
   display:flex;
   align-items:center;
   gap:8px;
-  font-size:11px;
+  font-size:12px;
   color:#c1c9dc
 }
 .filter-bar .local-search {
@@ -674,7 +674,7 @@ main {
 .clear-filters {
   background:none;
   color:var(--accent);
-  font-size:11px;
+  font-size:12px;
   padding:10px;
   min-height:44px
 }
@@ -724,7 +724,8 @@ main {
   align-items:flex-start;
   justify-content:center;
   height:100%;
-  padding:26px 22px;
+  padding:20px 14px 36px;
+  box-sizing:border-box;
   color:#d5c4ef;
   background:radial-gradient(ellipse at 100% 10%,#986ba14a,transparent 70%),linear-gradient(145deg,#393253,#18233b);
   position:relative;
@@ -755,10 +756,11 @@ main {
   color:#cedbf3
 }
 .fallback-kicker {
-  font-size:8px;
-  letter-spacing:2px;
+  font-size:12px;
+  letter-spacing:1px;
   font-weight:650;
-  margin-bottom:18px;
+  margin-bottom:12px;
+  overflow-wrap:anywhere;
   z-index:1
 }
 .fallback-title {
@@ -770,14 +772,14 @@ main {
   z-index:1
 }
 .fallback-year {
-  font-size:10px;
+  font-size:12px;
   margin-top:15px;
   opacity:.85;
-  letter-spacing:3px;
+  letter-spacing:2px;
   z-index:1
 }
 .fallback-caption {
-  font-size:8px;
+  font-size:12px;
   letter-spacing:1px;
   position:absolute;
   bottom:15px;
@@ -816,7 +818,7 @@ main {
   color:var(--gold);
   border-radius:6px;
   padding:5px 7px;
-  font-size:10px;
+  font-size:12px;
   font-weight:700
 }
 .card-body {
@@ -835,7 +837,7 @@ main {
   overflow-wrap:anywhere
 }
 .card-meta {
-  font-size:10px;
+  font-size:12px;
   color:#b3bed4;
   display:flex;
   align-items:center;
@@ -846,7 +848,7 @@ main {
   margin-bottom:11px
 }
 .card-reason {
-  font-size:10px;
+  font-size:12px;
   color:#aebad0;
   line-height:1.6;
   margin-bottom:12px;
@@ -869,7 +871,7 @@ main {
   background:#9482e516;
   border:1px solid #9581d335;
   color:#c7bdf1;
-  font-size:8px;
+  font-size:12px;
   letter-spacing:.2px
 }
 .tag.seen {
@@ -891,7 +893,7 @@ main {
   margin-top:auto;
   padding-top:2px;
   color:#aeb9cf;
-  font-size:9px
+  font-size:12px
 }
 .provider-row a {
   display:flex;
@@ -907,7 +909,7 @@ main {
   border-radius:5px
 }
 .provider-row .provider-text {
-  font-size:9px
+  font-size:12px
 }
 .card-actions {
   display:flex;
@@ -918,7 +920,7 @@ main {
   padding-top:10px
 }
 .card-actions .trailer-button {
-  font-size:10px;
+  font-size:12px;
   min-height:36px;
   flex:1;
   background:#232d44;
@@ -967,7 +969,7 @@ main {
   width:0
 }
 .results-list .fallback-kicker {
-  font-size:6px;
+  font-size:12px;
   letter-spacing:1px
 }
 .results-list .card-reason {
@@ -975,7 +977,7 @@ main {
 }
 .result-count {
   text-align:center;
-  font-size:11px;
+  font-size:12px;
   color:var(--muted);
   margin:22px 0 0
 }
@@ -1065,7 +1067,7 @@ main {
   margin-bottom:14px
 }
 .site-footer p {
-  font-size:10px;
+  font-size:12px;
   color:#a3afc6;
   margin-bottom:7px
 }
@@ -1075,7 +1077,7 @@ main {
   text-underline-offset:3px
 }
 .site-footer .fine-print {
-  font-size:9px
+  font-size:12px
 }
 .mobile-nav {
   display:none
@@ -1084,7 +1086,7 @@ main {
   color:var(--muted)
 }
 .fine-print {
-  font-size:11px;
+  font-size:12px;
   color:var(--muted);
   line-height:1.65
 }
@@ -1144,7 +1146,7 @@ main {
 .detail-credits strong {
   display:block;
   color:#dfe4f3;
-  font-size:10px;
+  font-size:12px;
   letter-spacing:1px;
   text-transform:uppercase;
   margin:15px 0 7px
@@ -1158,7 +1160,7 @@ main {
   padding:7px 10px;
   border:1px solid #414c64;
   border-radius:8px;
-  font-size:11px;
+  font-size:12px;
   min-height:36px;
   display:inline-flex;
   align-items:center;
@@ -1177,7 +1179,7 @@ main {
   margin:12px 0
 }
 .watch-group>span {
-  font-size:10px;
+  font-size:12px;
   color:var(--muted);
   display:block;
   margin-bottom:7px
@@ -1191,7 +1193,7 @@ main {
   display:flex;
   align-items:center;
   gap:6px;
-  font-size:10px;
+  font-size:12px;
   padding:6px 8px;
   border:1px solid #44506b;
   border-radius:8px;
@@ -1214,7 +1216,7 @@ main {
 }
 .personal-panel label:not(.check-label) {
   display:block;
-  font-size:11px;
+  font-size:12px;
   color:#b7c2d9;
   margin:13px 0 6px
 }
@@ -1239,7 +1241,7 @@ main {
 }
 .personal-panel .fine-print {
   margin:12px 0 0;
-  font-size:10px
+  font-size:12px
 }
 .details-section-title {
   grid-column:1/-1;
@@ -1281,14 +1283,14 @@ main {
   margin-bottom:8px
 }
 .person-card p {
-  font-size:11px;
+  font-size:12px;
   color:var(--muted);
   margin-bottom:14px
 }
 .person-card .button {
   margin-top:auto;
   min-height:42px;
-  font-size:11px
+  font-size:12px
 }
 .filmography-info {
   grid-column:1/-1;
@@ -1333,7 +1335,7 @@ dialog::backdrop {
   letter-spacing:-.8px
 }
 .dialog-header .eyebrow {
-  font-size:9px;
+  font-size:12px;
   margin-bottom:5px
 }
 .dialog-header .icon-button {
@@ -1351,7 +1353,7 @@ dialog::backdrop {
   font-size:13px
 }
 .field-hint {
-  font-size:11px;
+  font-size:12px;
   color:var(--muted);
   margin:9px 0 18px
 }
@@ -1369,7 +1371,7 @@ dialog::backdrop {
   font-weight:650
 }
 .switch-row small {
-  font-size:11px;
+  font-size:12px;
   color:var(--muted);
   line-height:1.6;
   display:block;
@@ -1389,7 +1391,7 @@ dialog::backdrop {
   letter-spacing:-.4px
 }
 .backup-section p {
-  font-size:11px;
+  font-size:12px;
   color:var(--muted)
 }
 .backup-section .button-row {
@@ -1423,7 +1425,7 @@ dialog::backdrop {
 }
 .pick-counter {
   color:var(--muted);
-  font-size:11px;
+  font-size:12px;
   margin-top:17px
 }
 .candidate {
@@ -1509,7 +1511,7 @@ dialog::backdrop {
   color:#e1d9ff
 }
 .stat-tile span {
-  font-size:10px;
+  font-size:12px;
   color:var(--muted)
 }
 .empty-actions {
@@ -1620,7 +1622,7 @@ dialog::backdrop {
     justify-content:center;
     min-height:49px;
     gap:2px;
-    font-size:10px;
+    font-size:12px;
     font-weight:600;
     color:#b2bdd2;
     flex:1;
@@ -1655,11 +1657,11 @@ dialog::backdrop {
     gap:15px
   }
   .hero-links .button {
-    font-size:11px;
+    font-size:12px;
     padding:10px 13px
   }
   .hero-links .text-link {
-    font-size:11px
+    font-size:12px
   }
   .tonight-card {
     padding:18px
@@ -1668,11 +1670,11 @@ dialog::backdrop {
     font-size:18px
   }
   .tonight-card .eyebrow {
-    font-size:8px;
+    font-size:12px;
     letter-spacing:1px
   }
   .tonight-card p {
-    font-size:11px
+    font-size:12px
   }
   .tonight-art {
     transform:rotate(-5deg) scale(.84);
@@ -1681,7 +1683,7 @@ dialog::backdrop {
     height:83px
   }
   .tonight-card .button {
-    font-size:10px;
+    font-size:12px;
     padding:10px
   }
   .results-grid {
@@ -1729,7 +1731,7 @@ dialog::backdrop {
   .region-button {
     padding:6px 8px;
     min-height:40px;
-    font-size:11px
+    font-size:12px
   }
   .region-button span:first-child {
     display:none
@@ -1752,7 +1754,7 @@ dialog::backdrop {
     margin-bottom:17px
   }
   .hero .eyebrow {
-    font-size:9px;
+    font-size:12px;
     letter-spacing:1.6px
   }
   .hero-copy>p:not(.eyebrow) {
@@ -1767,11 +1769,11 @@ dialog::backdrop {
     gap:23px
   }
   .hero-links .button {
-    font-size:11px;
+    font-size:12px;
     min-height:43px
   }
   .hero-links .text-link {
-    font-size:11px
+    font-size:12px
   }
   .desktop-only {
     display:none
@@ -1783,7 +1785,7 @@ dialog::backdrop {
   #searchTypeSelect {
     min-width:91px;
     width:91px;
-    font-size:11px;
+    font-size:12px;
     padding:8px 3px 8px 0;
     margin-left:5px
   }
@@ -1804,11 +1806,11 @@ dialog::backdrop {
   .library-summary {
     padding:13px 0 18px;
     gap:8px 15px;
-    font-size:10px
+    font-size:12px
   }
   .library-summary .seed-link {
     margin-left:0;
-    font-size:10px
+    font-size:12px
   }
   .section-heading {
     padding:24px 0 14px;
@@ -1816,7 +1818,7 @@ dialog::backdrop {
     align-items:flex-start
   }
   .section-heading .eyebrow {
-    font-size:8px;
+    font-size:12px;
     letter-spacing:1.4px
   }
   .section-heading h2 {
@@ -1824,14 +1826,14 @@ dialog::backdrop {
     letter-spacing:-.7px
   }
   .section-heading .muted {
-    font-size:11px;
+    font-size:12px;
     line-height:1.7
   }
   .view-actions {
     gap:3px
   }
   .view-actions .button {
-    font-size:10px;
+    font-size:12px;
     padding:9px;
     min-height:40px
   }
@@ -1843,7 +1845,7 @@ dialog::backdrop {
     margin-bottom:18px
   }
   .filter-menu summary {
-    font-size:11px;
+    font-size:12px;
     min-height:42px;
     padding:9px 10px
   }
@@ -1852,18 +1854,18 @@ dialog::backdrop {
   }
   .filter-bar select {
     min-height:42px;
-    font-size:11px;
+    font-size:12px;
     padding:8px;
     max-width:100%
   }
   .filter-bar>label {
-    font-size:10px
+    font-size:12px
   }
   .segmented {
     padding:3px
   }
   .segmented button {
-    font-size:10px;
+    font-size:12px;
     padding:7px 12px;
     min-height:34px
   }
@@ -1886,7 +1888,7 @@ dialog::backdrop {
     margin-top:7px
   }
   .clear-filters {
-    font-size:10px;
+    font-size:12px;
     padding:8px;
     min-height:40px
   }
@@ -1908,12 +1910,12 @@ dialog::backdrop {
     line-height:1.35
   }
   .card-meta {
-    font-size:9px;
+    font-size:12px;
     gap:5px;
     margin-bottom:9px
   }
   .card-reason {
-    font-size:10px;
+    font-size:12px;
     -webkit-line-clamp:3
   }
   .poster-fallback {
@@ -1924,16 +1926,16 @@ dialog::backdrop {
     letter-spacing:-.5px
   }
   .fallback-kicker {
-    font-size:7px;
+    font-size:12px;
     letter-spacing:1.5px;
     margin-bottom:13px
   }
   .fallback-year {
-    font-size:9px;
+    font-size:12px;
     margin-top:14px
   }
   .fallback-caption {
-    font-size:6px;
+    font-size:12px;
     bottom:10px;
     left:16px
   }
@@ -1945,12 +1947,12 @@ dialog::backdrop {
     font-size:21px
   }
   .score {
-    font-size:9px;
+    font-size:12px;
     bottom:7px;
     left:7px
   }
   .tag {
-    font-size:8px;
+    font-size:12px;
     padding:3px 5px
   }
   .card-actions {
@@ -1960,21 +1962,21 @@ dialog::backdrop {
   }
   .card-actions .trailer-button {
     min-height:40px;
-    font-size:10px
+    font-size:12px
   }
   .card-actions .quick-seen {
     min-height:40px;
     min-width:37px
   }
   .provider-row {
-    font-size:8px
+    font-size:12px
   }
   .provider-row img {
     height:21px;
     width:21px
   }
   .provider-row .provider-text {
-    font-size:8px
+    font-size:12px
   }
   .detail-layout {
     grid-template-columns:1fr;
@@ -1994,13 +1996,13 @@ dialog::backdrop {
     margin-bottom:20px
   }
   .detail-meta {
-    font-size:11px
+    font-size:12px
   }
   .detail-info .button-row {
     gap:7px
   }
   .detail-info .button-row .button {
-    font-size:11px;
+    font-size:12px;
     padding:10px 12px
   }
   .personal-panel {
@@ -2025,7 +2027,7 @@ dialog::backdrop {
     font-size:21px
   }
   .stat-tile span {
-    font-size:9px
+    font-size:12px
   }
   .person-card {
     padding:14px 11px
@@ -2034,7 +2036,7 @@ dialog::backdrop {
     font-size:13px
   }
   .person-card .button {
-    font-size:10px;
+    font-size:12px;
     padding:8px;
     min-height:42px
   }
@@ -2051,17 +2053,17 @@ dialog::backdrop {
     font-size:12px
   }
   .result-count {
-    font-size:10px
+    font-size:12px
   }
   .site-footer {
     padding-left:20px;
     padding-right:20px
   }
   .site-footer p {
-    font-size:9px
+    font-size:12px
   }
   .site-footer .fine-print {
-    font-size:8px
+    font-size:12px
   }
   dialog {
     padding:20px;
@@ -2079,7 +2081,7 @@ dialog::backdrop {
     font-size:21px
   }
   .pick-layout p {
-    font-size:11px
+    font-size:12px
   }
   .pick-layout .poster-fallback {
     padding:14px 10px
@@ -2091,12 +2093,12 @@ dialog::backdrop {
     display:none
   }
   .pick-layout .button-row .button {
-    font-size:10px;
+    font-size:12px;
     padding:8px
   }
   .video-fallback {
     flex-wrap:wrap;
-    font-size:11px
+    font-size:12px
   }
   .toast-container {
     left:16px;
@@ -2104,7 +2106,7 @@ dialog::backdrop {
     max-width:none
   }
   .toast {
-    font-size:11px
+    font-size:12px
   }
   #suggestions {
     left:-99px
@@ -2113,7 +2115,7 @@ dialog::backdrop {
     font-size:12px
   }
   #suggestions small {
-    font-size:9px
+    font-size:12px
   }
 }
 @media(max-width:350px) {
@@ -2146,17 +2148,17 @@ dialog::backdrop {
     min-width:31px
   }
   .view-actions .button {
-    font-size:9px;
+    font-size:12px;
     padding:8px
   }
   .filter-menu summary {
-    font-size:10px
+    font-size:12px
   }
   .results-grid {
     gap:12px 9px
   }
   .card-body h3 {
-    font-size:11px
+    font-size:12px
   }
   .pick-layout {
     grid-template-columns:1fr
