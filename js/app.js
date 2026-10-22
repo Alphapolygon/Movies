@@ -25,6 +25,25 @@ function link(text, href, className = '') { return el('a', { href, class: classN
 function externalLink(text, href, className = 'button secondary') {
   const url = safeURL(href); return url ? el('a', { href: url, class: className, target: '_blank', rel: 'noopener noreferrer' }, text) : null;
 }
+const SVG = 'http://www.w3.org/2000/svg';
+const ICON_PATHS = {
+  heart: 'M12 20.5C6 16.5 3 13 3 9.2 3 6.6 5 4.7 7.4 4.7c1.8 0 3.4 1 4.6 2.8 1.2-1.8 2.8-2.8 4.6-2.8C19 4.7 21 6.6 21 9.2c0 3.8-3 7.3-9 11.3z',
+  check: 'M5 12.5l4.5 4.5L19 7.5', play: 'M8 5.5v13l11-6.5z', close: 'M6 6l12 12M18 6L6 18',
+  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', list: 'M4 6h16M4 12h16M4 18h16'
+};
+function icon(name, { filled = false } = {}) {
+  const svg = document.createElementNS(SVG, 'svg'), path = document.createElementNS(SVG, 'path');
+  for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', width: '18', height: '18', fill: filled ? 'currentColor' : 'none', stroke: 'currentColor',
+    'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', class: 'icon' })) svg.setAttribute(k, v);
+  path.setAttribute('d', ICON_PATHS[name]); svg.append(path); return svg;
+}
+const FILTER_KEY = 'wtwn_discover_filters';
+function savedFilters() { try { const v = JSON.parse(localStorage.getItem(FILTER_KEY)); return v && typeof v === 'object' ? v : null; } catch { return null; } }
+function saveFilters(r) {
+  try { localStorage.setItem(FILTER_KEY, JSON.stringify({ type: r.type, genres: r.genres, decades: r.decades, providers: r.providers, sort: r.sort, access: r.access, available: r.available })); } catch { /* Remembering filters is a convenience only. */ }
+}
+function clearSavedFilters() { try { localStorage.removeItem(FILTER_KEY); } catch { /* ignore */ } }
 function notice(message, warning = false) { const n = $('viewNotice'); n.textContent = message; n.classList.toggle('warning', warning); n.hidden = !message; }
 let toastTimer;
 function toast(message) {
@@ -123,7 +142,7 @@ function updateCounts() {
     const key = control.dataset.saveKey, item = store.get(key), state = store.status(key);
     control.setAttribute('aria-pressed', String(state.saved));
     control.setAttribute('aria-label', `${state.saved ? 'Remove' : 'Add'} ${titleOf(item || { title: control.dataset.title })} ${state.saved ? 'from' : 'to'} watchlist`);
-    control.textContent = state.saved ? '\u2665' : '\u2661';
+    control.replaceChildren(icon('heart', { filled: state.saved }));
   }
   for (const control of document.querySelectorAll('[data-seen-key]')) {
     const key = control.dataset.seenKey, item = store.get(key), state = store.status(key);
@@ -164,7 +183,7 @@ function movieCard(input) {
   const item = store.get(input) || input, status = store.status(item), key = store.canonical(item);
   const card = el('article', { class: 'movie-card', 'data-key': key });
   const image = poster(item);
-  const saved = button(status.saved ? '\u2665' : '\u2661', () => toggleSaved(item), 'card-save', {
+  const saved = button(icon('heart', { filled: status.saved }), () => toggleSaved(item), 'card-save', {
     'aria-label': `${status.saved ? 'Remove' : 'Add'} ${titleOf(item)} ${status.saved ? 'from' : 'to'} watchlist`, 'aria-pressed': String(status.saved), 'data-save-key': key, 'data-title': titleOf(item) });
   image.append(saved);
   if (item.vote_average != null) image.append(el('span', { class: 'score', title: 'TMDB community rating, out of 10' }, `\u2605 ${item.vote_average.toFixed(1)}`));
@@ -188,8 +207,8 @@ function movieCard(input) {
   }
   body.append(providerRow);
   body.append(el('div', { class: 'card-actions' },
-    button(mediaType(item) === 'unknown' ? 'Details \u2197' : '\u25b7 Trailer', () => mediaType(item) === 'unknown' ? navigate(titleRoute(item)) : playTrailer(item), 'trailer-button', { 'aria-label': `${mediaType(item) === 'unknown' ? 'Open details for' : 'Watch trailer for'} ${titleOf(item)}` }),
-    button('\u2713', () => toggleSeen(item), 'quick-seen', { 'aria-label': `Mark ${titleOf(item)} as ${status.watched ? 'unwatched' : 'watched'}`, 'aria-pressed': String(status.watched), 'data-seen-key': key, 'data-title': titleOf(item) })
+    button(mediaType(item) === 'unknown' ? 'Details \u2197' : [icon('play'), ' Trailer'], () => mediaType(item) === 'unknown' ? navigate(titleRoute(item)) : playTrailer(item), 'trailer-button', { 'aria-label': `${mediaType(item) === 'unknown' ? 'Open details for' : 'Watch trailer for'} ${titleOf(item)}` }),
+    button(icon('check'), () => toggleSeen(item), 'quick-seen', { 'aria-label': `Mark ${titleOf(item)} as ${status.watched ? 'unwatched' : 'watched'}`, 'aria-pressed': String(status.watched), 'data-seen-key': key, 'data-title': titleOf(item) })
   ));
   card.append(image, body); return card;
 }
@@ -253,11 +272,19 @@ async function renderRoute({ useCache = false, initial = false } = {}) {
   pageController?.abort(); pageController = new AbortController(); epoch++;
   const version = epoch; currentHash = location.hash || '#discover'; hideSuggestions(); setupObserver();
   let route = parseRoute(currentHash);
-  if (route.mode === 'discover' && !currentHash.includes('?')) route.available = store.state.settings.hideUnavailable;
+  if (route.mode === 'discover') {
+    const remembered = !currentHash.includes('?') && savedFilters();
+    if (remembered) {
+      route = parseRoute(routeHash({ mode: 'discover', ...remembered }));
+      currentHash = routeHash(route); history.replaceState(history.state, '', currentHash);
+    } else if (!currentHash.includes('?')) route.available = store.state.settings.hideUnavailable;
+    else saveFilters(route);
+  }
   const cached = useCache ? views.get(currentHash) : null;
   view = cached || { route, items: [], page: 0, totalPages: 0, localLimit: PAGE_SIZE, scrollY: 0, loading: false };
   view.route = route; view.loading = false;
   $('hero').hidden = route.mode !== 'discover';
+  $('becauseSection')?.remove(); document.querySelector('.hidden-note')?.remove();
   $('resultsContainer').replaceChildren(); $('resultCount').textContent = ''; $('filterBar').replaceChildren(); notice('');
   $('loadMoreContainer').hidden = true; setLoading(false); updateHeading(route); buildFilters(); buildViewActions();
   for (const a of document.querySelectorAll('[data-nav]')) {
@@ -270,7 +297,11 @@ async function renderRoute({ useCache = false, initial = false } = {}) {
     $('viewTitle').focus({ preventScroll: true });
   }
   try {
-    if (localModes.includes(route.mode)) paintLocal();
+    if (localModes.includes(route.mode)) {
+      paintLocal();
+      if (route.mode !== 'seen' && !catalogs.providers.has(`movie/${store.state.settings.region}`)) void loadCatalogs('movie', version);
+      if (route.mode === 'for-you') void loadBecause(version);
+    }
     else if (['movie', 'tv', 'title'].includes(route.mode)) await loadDetails(version);
     else if (route.mode === 'person') {
       if (!route.id) throw new ApiError('Invalid person link.');
@@ -328,9 +359,11 @@ function buildFilters() {
     bar.append(typeButtons, multiFilter('Genres', 'genres', catalogs.genres.get(route.type)), multiFilter('Decades', 'decades', decades),
       multiFilter('Services', 'providers', providers.map(p => ({ id: p.provider_id, name: p.provider_name }))),
       selectControl('Sort discoveries', [['popular', 'Popular'], ['rating', 'Top rated'], ['newest', 'Newest']], route.sort, sort => updateRoute({ sort }), 'sortSelect'),
-      selectControl('Availability type', [['stream', 'Stream / free'], ['all', 'Also rent & buy']], route.access, access => updateRoute({ access })),
-      el('label', {}, el('input', { type: 'checkbox', checked: route.available, onchange: e => updateRoute({ available: e.target.checked }) }), 'Available here'),
-      button('Reset filters', () => navigate('#discover', { force: true }), 'clear-filters'));
+      el('details', { class: 'filter-menu more-filters' }, el('summary', {}, `More${route.access === 'all' || route.available ? ` (${Number(route.access === 'all') + Number(route.available)})` : ''}`),
+        el('div', { class: 'filter-options more-options' },
+          selectControl('Availability type', [['stream', 'Stream / free'], ['all', 'Also rent & buy']], route.access, access => updateRoute({ access })),
+          el('label', {}, el('input', { type: 'checkbox', checked: route.available, onchange: e => updateRoute({ available: e.target.checked }) }), 'Available here'))),
+      button('Reset filters', () => { clearSavedFilters(); navigate('#discover', { force: true }); }, 'clear-filters'));
   } else if (localModes.includes(route.mode)) {
     let timer;
     const input = el('input', { type: 'search', class: 'local-search', placeholder: route.mode === 'seen' ? 'Search your watched titles...' : 'Filter by title, year, reason, or note...', 'aria-label': 'Filter personal collection', value: route.q, maxlength: '250' });
@@ -349,6 +382,11 @@ function buildFilters() {
       selectControl('Filter by source', [['', 'All sources'], ['watchlist', 'Letterboxd list'], ['discovery', 'New discoveries']], route.source, source => updateRoute({ source })),
       selectControl('Watchlist status', [['all', 'All statuses'], ['unwatched', 'Unwatched'], ['watched', 'Watched'], ['priority', 'Up next / soon']], route.status, status => updateRoute({ status }))
     );
+    if (route.mode !== 'seen') {
+      const services = catalogs.providers.get(`movie/${store.state.settings.region}`) || [];
+      bar.append(selectControl('Streaming service', [['', 'Any service'], ['0', `Any streaming in ${store.state.settings.region}`], ...services.map(p => [String(p.provider_id), p.provider_name])],
+        route.providers[0] || '', value => updateRoute({ providers: value ? [value] : [] })));
+    }
     const sorts = [['alpha', 'Title A\u2013Z'], ['newest', 'Newest release'], ['oldest', 'Oldest release']];
     if (route.mode === 'seen') sorts.push(['rating', 'Your highest rated']);
     else sorts.push(['priority', 'Priority first'], ['recent', 'Recently saved']);
@@ -361,8 +399,9 @@ function buildViewActions() {
   const actions = $('viewActions'); actions.replaceChildren(); const mode = view.route.mode;
   if (['movie', 'tv', 'title', 'person', 'search'].includes(mode)) actions.append(button('\u2190 Back', handleBack, 'button subtle'));
   if (localModes.includes(mode)) actions.append(button('Load posters', enrichVisible, 'button subtle', { id: 'enrichButton', title: 'Match just the currently displayed titles, not your entire library' }));
-  if (['discover', 'for-you', 'watchlist', 'search'].includes(mode) && !['actor', 'director'].includes(view.route.kind)) actions.append(button('\u2727 Pick one', () => pickTonight(false), 'button secondary', { title: 'Choose from the current filtered results' }));
-  if (['discover', ...localModes].includes(mode)) actions.append(button(store.state.settings.layout === 'list' ? '\u25a6 Grid' : '\u2637 List', () => {
+  if (localModes.includes(mode) && mode !== 'seen' && unmatchedQueue().length) actions.append(button(`Review unmatched (${unmatchedQueue().length})`, reviewUnmatched, 'button subtle', { title: 'Choose the right TMDB edition for titles that could not be matched automatically' }));
+  if (['discover', 'for-you', 'watchlist', 'search'].includes(mode) && !['actor', 'director'].includes(view.route.kind)) actions.append(button([icon('sparkle'), ' Pick one'], () => pickTonight(false), 'button secondary', { title: 'Choose from the current filtered results' }));
+  if (['discover', ...localModes].includes(mode)) actions.append(button(store.state.settings.layout === 'list' ? [icon('grid'), ' Grid'] : [icon('list'), ' List'], () => {
     store.setSettings({ layout: store.state.settings.layout === 'grid' ? 'list' : 'grid' }); buildViewActions();
     localModes.includes(view.route.mode) ? paintLocal() : paintList();
   }, 'button subtle layout-toggle', { 'aria-label': 'Toggle grid or list layout' }));
@@ -377,7 +416,7 @@ async function loadCatalogs(type, version) {
     if (!alive(version)) return;
     if (genres.status === 'fulfilled' && Array.isArray(genres.value.genres)) catalogs.genres.set(type, genres.value.genres.filter(g => Number.isSafeInteger(g.id) && typeof g.name === 'string').sort((a, b) => a.name.localeCompare(b.name)));
     if (providers.status === 'fulfilled' && Array.isArray(providers.value.results)) catalogs.providers.set(`${type}/${region}`, providers.value.results.filter(p => Number.isSafeInteger(p.provider_id) && typeof p.provider_name === 'string').sort((a, b) => a.provider_name.localeCompare(b.provider_name)));
-    if (view.route.mode === 'discover' && view.route.type === type && store.state.settings.region === region) buildFilters();
+    if ((view.route.mode === 'discover' && view.route.type === type || localModes.includes(view.route.mode) && type === 'movie') && store.state.settings.region === region) buildFilters();
   } catch { /* Optional filter metadata does not prevent the results or library working. */ }
 }
 function mediaItems(rows, type) {
@@ -432,19 +471,28 @@ function paintList() {
   if (!visible.length) grid.append(listEmpty('Nothing matching yet', more ? 'No matching titles on the pages loaded so far. Load more, change the filters, or turn off Hide watched in Settings.' : 'Try a different search or clear the filters. Your personal collection is always available.', [link('Explore your picks', '#for-you', 'button secondary')]));
   $('resultCount').textContent = `${visible.length.toLocaleString()} ${people ? 'people' : 'titles'} shown${view.page ? ` \u00b7 ${view.page} of ${view.totalPages || 1} pages loaded` : ''}`;
   $('loadMoreContainer').hidden = !more;
+  document.querySelector('.hidden-note')?.remove();
+  const hiddenSeen = people || !store.state.settings.hideSeen ? 0 : view.items.filter(item => store.isSeen(item)).length;
+  if (hiddenSeen) $('resultCount').after(el('p', { class: 'hidden-note' }, `${hiddenSeen} title${hiddenSeen === 1 ? '' : 's'} you have already watched ${hiddenSeen === 1 ? 'is' : 'are'} hidden. `,
+    button('Show them', () => { store.setSettings({ hideSeen: false }); paintList(); }, 'button subtle small'), ' You can turn this back on in Settings.'));
   // Hide-watched can empty most of a page; keep fetching until a screenful is visible.
   if (more && !people && visible.length < 12 && !view.failed && (view.autoFills = (view.autoFills || 0) + 1) <= 10) {
     const version = epoch;
     setTimeout(() => { if (alive(version)) loadNextPage(version); }, 0);
   }
 }
-function filteredLocal() {
+function matchesService(watch, id) { const list = streamProviders(watch); return id === '0' ? list.length > 0 : list.some(p => String(p.id) === id); }
+function filteredLocal(ignoreService = false) {
   const route = view.route, q = normalizeTitle(route.q);
   return sortItems(store.all().filter(item => {
     const status = store.status(item);
     if (route.mode === 'watchlist' && !status.saved) return false;
     if (route.mode === 'for-you' && (!item.recommended || (store.state.settings.hideSeen && status.watched))) return false;
     if (route.mode === 'seen' && !status.watched) return false;
+    if (route.providers.length && route.mode !== 'seen' && !ignoreService) {
+      const watch = mediaType(item) !== 'unknown' && watches.get(watchKey(item));
+      if (!watch || !matchesService(watch, route.providers[0])) return false;
+    }
     if (route.mood && !(item.moods || []).includes(route.mood)) return false;
     if (route.source && !(item.sources || []).includes(route.source)) return false;
     if (route.status === 'watched' && !status.watched) return false;
@@ -467,13 +515,91 @@ function paintLocal() {
     grid.append(el('div', { class: 'stats-strip' }, stats.map(([value, label]) => el('div', { class: 'stat-tile' }, el('strong', {}, value), el('span', {}, label)))));
   }
   grid.append(...visible.map(movieCard));
-  if (!visible.length) grid.append(listEmpty(view.route.mode === 'watchlist' ? 'Make room for your next favorite' : 'No titles match these filters', view.route.mode === 'watchlist' ? 'Save a movie or series with the heart button, or clear your current filters.' : 'Try a shorter search, a different mood, or clear the selected filters.', [button('Clear filters', () => navigate(`#${view.route.mode}`, { force: true })), link('Discover something new', '#discover', 'button secondary')]));
+  if (!visible.length && view.scanning) grid.append(busyNode('Checking streaming availability...'));
+  else if (!visible.length) grid.append(listEmpty(view.route.mode === 'watchlist' ? 'Make room for your next favorite' : 'No titles match these filters', view.route.mode === 'watchlist' ? 'Save a movie or series with the heart button, or clear your current filters.' : 'Try a shorter search, a different mood, or clear the selected filters.', [button('Clear filters', () => navigate(`#${view.route.mode}`, { force: true })), link('Discover something new', '#discover', 'button secondary')]));
   $('resultCount').textContent = `${visible.length.toLocaleString()} of ${all.length.toLocaleString()} titles shown`;
   $('loadMoreContainer').hidden = visible.length >= all.length;
   if (seedError) notice(seedError, true);
   // Imported titles have no TMDB link yet; match the visible ones automatically so posters and details appear.
   const version = epoch;
   setTimeout(() => { if (alive(version)) enrichVisible({ quiet: true }); }, 0);
+  if (view.route.providers.length && view.route.mode !== 'seen' && !view.scanned && !view.scanning) void scanAvailability(version);
+  for (const node of document.querySelectorAll('#becauseSection .provider-row')) if (node._load && observer) observer.observe(node);
+}
+/** Matches and checks availability for the whole filtered collection so the streaming-service filter can answer for every title. */
+async function scanAvailability(version) {
+  const target = view, signal = pageController.signal, queue = filteredLocal(true).filter(x => mediaType(x) === 'unknown' || !watches.has(watchKey(x)));
+  target.scanning = true;
+  const total = queue.length; let done = 0;
+  const worker = async () => {
+    while (queue.length && alive(version)) {
+      let item = queue.shift();
+      try {
+        item = store.get(item) || item;
+        if (mediaType(item) === 'unknown') item = await matchImported(item, signal);
+        if (item) await watchFor(item, signal);
+      } catch (error) { if (error.name === 'AbortError') return; }
+      done++; if (done % 8 === 0 && view === target && alive(version)) { notice(`Checking streaming availability... ${done} of ${total}`); paintLocal(); }
+    }
+  };
+  if (total) notice(`Checking streaming availability... 0 of ${total}`);
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  target.scanning = false;
+  if (!alive(version)) return;
+  target.scanned = true; notice(''); if (view === target) paintLocal();
+}
+function unmatchedQueue() { return store.all().filter(x => mediaType(x) === 'unknown' && (store.status(x).saved || x.recommended) && !store.isSeen(x)); }
+async function reviewUnmatched() {
+  const queue = unmatchedQueue(), total = queue.length; let index = 0;
+  const finish = () => { closeDialog($('actionModal')); buildViewActions(); if (localModes.includes(view?.route.mode)) paintLocal(); };
+  async function next() {
+    if (!queue.length) { finish(); toast('All titles reviewed.'); return; }
+    const item = queue.shift(); index++;
+    const matches = el('div', {}, busyNode('Finding possible editions...'));
+    const signal = actionDialog('Review unmatched titles', el('div', {}, el('p', { class: 'fine-print' }, `${index} of ${total}`),
+      el('h3', {}, `${titleOf(item)} (${yearOf(item) || 'year unknown'})`), matches,
+      el('div', { class: 'button-row' }, button('Skip', () => next(), 'button secondary'), button('Stop', finish, 'button subtle'))));
+    try {
+      const data = await api.get('/search/multi', { query: titleOf(item), include_adult: false }, { signal });
+      if (signal.aborted) return;
+      const results = (Array.isArray(data.results) ? data.results : []).filter(c => c && !c.adult && ['movie', 'tv'].includes(c.media_type) && Number.isSafeInteger(c.id));
+      const exact = exactCandidates(item, results);
+      const sorted = [...exact, ...results.filter(c => !exact.some(e => e.id === c.id && e.media_type === c.media_type))].slice(0, 8);
+      matches.replaceChildren(...(sorted.length ? sorted.map(c => {
+        const src = imageURL(c.poster_path, 'w92');
+        return el('div', { class: 'candidate' }, src ? el('img', { class: 'candidate-poster', src, alt: '', width: '40', height: '60', loading: 'lazy' }) : null,
+          el('div', {}, titleOf(c), el('small', {}, `${yearOf(c) || 'Year unknown'} \u00b7 ${c.media_type === 'tv' ? 'TV series' : 'Movie'}`)),
+          button('Link', () => { store.link(itemKey(item), c); toast(`Linked ${titleOf(item)}.`); void next(); }, 'button secondary'));
+      }) : [el('p', { class: 'muted' }, 'No matching movies or series for this title.')]));
+    } catch (error) { if (!signal.aborted) matches.replaceChildren(el('p', { class: 'notice warning', role: 'alert' }, error.message)); }
+  }
+  if (!total) { toast('Every title is already matched.'); return; }
+  await next();
+}
+async function loadBecause(version, forceNew = false) {
+  if (view.route.mode !== 'for-you') return;
+  const signal = pageController.signal, fives = store.all().filter(x => store.status(x).rating === 5);
+  if (!fives.length) return;
+  const tried = view.becauseTried ||= new Set();
+  for (let attempt = 0; attempt < 6; attempt++) {
+    let pool = fives.filter(x => !tried.has(x.key));
+    if (!pool.length) { tried.clear(); pool = fives; }
+    let item = pool[Math.floor(Math.random() * pool.length)]; tried.add(item.key);
+    if (mediaType(item) === 'unknown') item = await matchImported(item, signal);
+    if (!alive(version)) return;
+    if (!item) continue;
+    let data;
+    try { data = await api.get(`/${item.media_type}/${item.id}/recommendations`, { page: 1 }, { signal }); } catch { if (!alive(version)) return; continue; }
+    if (!alive(version)) return;
+    const recs = mediaItems(data.results, item.media_type).filter(x => !store.isSeen(x)).slice(0, 12);
+    if (!recs.length) continue;
+    let section = $('becauseSection');
+    if (!section) { section = el('section', { id: 'becauseSection', class: 'because-section', 'aria-label': 'Because you rated a title five stars' }); $('resultsContainer').before(section); }
+    const grid = el('div', { class: 'results-grid' });
+    section.replaceChildren(el('div', { class: 'because-head' }, el('h3', {}, `Because you gave ${titleOf(item)} 5 stars`), button('Show another', () => loadBecause(epoch, true), 'button subtle small')), grid);
+    grid.append(...recs.map(movieCard));
+    return;
+  }
 }
 async function enrichVisible({ quiet = false } = {}) {
   const btn = $('enrichButton'); if (!btn || btn.disabled) return;
@@ -545,8 +671,9 @@ function personalPanel(item) {
   const priority = selectControl('Watch priority', [['0', 'Whenever'], ['1', 'Watch soon'], ['2', 'Up next']], String(state.priority), () => {});
   const notes = el('textarea', { rows: '4', maxlength: '4000', placeholder: 'Why did you save this one? A note for future you...', 'aria-label': 'Personal notes' }, state.notes);
   form.append(el('label', { class: 'check-label' }, saved, 'In my watchlist'), el('label', { class: 'check-label' }, watched, 'I have watched this'),
-    el('div', {}, el('label', {}, 'Your rating', rating)), el('div', {}, el('label', {}, 'Priority', priority)),
-    el('div', { class: 'personal-notes' }, el('label', {}, 'A note to yourself', notes)),
+    el('div', {}, el('label', {}, 'Your rating', rating)),
+    el('details', { class: 'panel-more', open: !!(state.notes || state.priority) }, el('summary', {}, 'Priority & note'),
+      el('div', {}, el('label', {}, 'Priority', priority)), el('div', { class: 'personal-notes' }, el('label', {}, 'A note to yourself', notes))),
     el('p', { class: 'field-hint' }, 'Giving a rating marks this title watched. These changes stay in this browser.'),
     el('button', { type: 'submit', class: 'button primary' }, 'Save changes'));
   watched.addEventListener('change', () => { if (!watched.checked) rating.value = ''; });
@@ -572,7 +699,7 @@ function detailLayout(item, raw = {}) {
   else if (!item.reasons?.length) info.append(el('p', { class: 'overview' }, mediaType(item) === 'unknown' ? 'This title is preserved from your imported collection. Match it to TMDB for its poster, synopsis, credits, and streaming providers.' : 'No synopsis is available for this title.'));
   const buttons = el('div', { class: 'button-row' });
   if (mediaType(item) === 'unknown') buttons.append(button('Find on TMDB', () => resolveTitle(item), 'button primary', { id: 'resolveTitleButton' }));
-  else buttons.append(button('\u25b7 Watch trailer', () => playTrailer(item), 'button primary'), externalLink('TMDB \u2197', `https://www.themoviedb.org/${item.media_type}/${item.id}`));
+  else buttons.append(button([icon('play'), ' Watch trailer'], () => playTrailer(item), 'button primary'), externalLink('TMDB \u2197', `https://www.themoviedb.org/${item.media_type}/${item.id}`));
   const letterboxd = item.url || `https://letterboxd.com/search/films/${encodeURIComponent(`${titleOf(item)} ${yearOf(item)}`)}/`;
   buttons.append(externalLink('Letterboxd \u2197', letterboxd));
   const imdb = raw.imdb_id;
@@ -878,7 +1005,7 @@ $('settingsForm').addEventListener('submit', event => {
   event.preventDefault();
   const before = store.state.settings.region;
   store.setSettings({ region: $('regionSelect').value, hideSeen: $('hideSeenToggle').checked, hideUnavailable: $('unavailableToggle').checked });
-  if (before !== store.state.settings.region) watches.clear();
+  if (before !== store.state.settings.region) { watches.clear(); clearSavedFilters(); }
   views.clear(); closeDialog($('settingsModal')); toast('Settings saved.');
   if (view.route.mode === 'discover') navigate(routeHash({ ...view.route, providers: before !== store.state.settings.region ? [] : view.route.providers, available: store.state.settings.hideUnavailable }), { replace: true, force: true });
   else renderRoute({ useCache: false });
