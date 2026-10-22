@@ -592,6 +592,11 @@ async function loadDetails(version) {
   let item = route.mode === 'title' ? store.get(route.key) : store.get(`${route.mode}:${route.id}`);
   if (route.mode === 'title' && !item) throw new ApiError('This imported title is not in your library.');
   if (item && mediaType(item) === 'unknown') {
+    setLoading(true);
+    const linked = await matchImported(item, pageController.signal);
+    if (!alive(version)) return;
+    setLoading(false);
+    if (linked) { navigate(titleRoute(linked), { replace: true, force: true }); return; }
     $('resultsContainer').className = 'results-grid'; $('resultsContainer').replaceChildren(detailLayout(item).layout);
     view.detailItem = item; document.title = `${titleOf(item)} | WhatToWatchNext`; return;
   }
@@ -682,6 +687,18 @@ async function loadRecommendations(version = epoch) {
     }
   } finally { if (alive(version)) { target.loading = false; $('loadMoreButton').disabled = false; $('loadMoreButton').textContent = 'Load more'; } }
 }
+/** Links an imported title to TMDB when exactly one movie/series matches its title and year; otherwise returns null. */
+async function matchImported(item, signal) {
+  try {
+    const data = await api.get('/search/multi', { query: titleOf(item), include_adult: false }, { signal });
+    if (!Array.isArray(data.results)) return null;
+    const results = data.results.filter(c => c && !c.adult && ['movie', 'tv'].includes(c.media_type) && Number.isSafeInteger(c.id));
+    const exact = exactCandidates(item, results);
+    if (exact.length !== 1) return null;
+    store.link(itemKey(item), exact[0]);
+    return store.get(itemKey(item));
+  } catch { return null; }
+}
 async function resolveTitle(item) {
   const body = el('div'), search = el('input', { type: 'search', value: titleOf(item), 'aria-label': 'TMDB matching search', maxlength: '250' });
   const matches = el('div'), form = el('form', { class: 'button-row' }, search, el('button', { class: 'button primary', type: 'submit' }, 'Search'));
@@ -746,10 +763,15 @@ function pickTonight(fromSaved = true) {
   }
   const seen = new Set();
   const description = fromSaved ? 'your unwatched watchlist' : localModes.includes(view?.route.mode) ? 'your current filtered collection' : 'the unwatched results already loaded';
-  function pick() {
+  async function pick() {
     const remaining = pool.filter(x => !seen.has(itemKey(x)));
-    const item = remaining[Math.floor(Math.random() * remaining.length)];
+    let item = remaining[Math.floor(Math.random() * remaining.length)];
     seen.add(itemKey(item));
+    if (mediaType(item) === 'unknown') {
+      const signal = actionDialog('Tonight, sorted.', busyNode('Finding details...'));
+      item = await matchImported(item, signal) || store.get(item) || item;
+      if (signal.aborted) return;
+    }
     const content = el('div', {}, el('div', { class: 'pick-layout' }, poster(item, { linked: false, eager: true }),
       el('div', {}, el('p', { class: 'eyebrow' }, 'THE DECISION IS MADE'), el('h3', {}, titleOf(item)),
         el('p', { class: 'muted' }, `${yearOf(item)}${item.moods?.length ? ` \u00b7 ${item.moods.join(' / ')}` : ''}`),
