@@ -1,6 +1,6 @@
 // Increment this cache version whenever deploying changed application files.
 // No API responses, watch-provider listings, or third-party resources are stored.
-const CACHE = 'whattowatchnext-shell-v3.0.0';
+const CACHE = 'whattowatchnext-shell-v3.0.1';
 const SHELL = ['./', './index.html', './style.css', './js/app.js', './js/core.js', './js/api.js', './js/store.js', './js/config.js', './data/library.json', './site.webmanifest', './favicon.ico', './web-app-manifest-192x192.png', './web-app-manifest-512x512.png', './apple-touch-icon.png'];
 const root = self.registration.scope;
 const assets = new Set(SHELL.map(path => new URL(path, root).href));
