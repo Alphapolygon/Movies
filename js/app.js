@@ -432,6 +432,11 @@ function paintList() {
   if (!visible.length) grid.append(listEmpty('Nothing matching yet', more ? 'No matching titles on the pages loaded so far. Load more, change the filters, or turn off Hide watched in Settings.' : 'Try a different search or clear the filters. Your personal collection is always available.', [link('Explore your picks', '#for-you', 'button secondary')]));
   $('resultCount').textContent = `${visible.length.toLocaleString()} ${people ? 'people' : 'titles'} shown${view.page ? ` \u00b7 ${view.page} of ${view.totalPages || 1} pages loaded` : ''}`;
   $('loadMoreContainer').hidden = !more;
+  // Hide-watched can empty most of a page; keep fetching until a screenful is visible.
+  if (more && !people && visible.length < 12 && !view.failed && (view.autoFills = (view.autoFills || 0) + 1) <= 10) {
+    const version = epoch;
+    setTimeout(() => { if (alive(version)) loadNextPage(version); }, 0);
+  }
 }
 function filteredLocal() {
   const route = view.route, q = normalizeTitle(route.q);
@@ -466,12 +471,18 @@ function paintLocal() {
   $('resultCount').textContent = `${visible.length.toLocaleString()} of ${all.length.toLocaleString()} titles shown`;
   $('loadMoreContainer').hidden = visible.length >= all.length;
   if (seedError) notice(seedError, true);
+  // Imported titles have no TMDB link yet; match the visible ones automatically so posters and details appear.
+  const version = epoch;
+  setTimeout(() => { if (alive(version)) enrichVisible({ quiet: true }); }, 0);
 }
-async function enrichVisible() {
+async function enrichVisible({ quiet = false } = {}) {
   const btn = $('enrichButton'); if (!btn || btn.disabled) return;
   const version = epoch, signal = pageController.signal;
-  const unresolved = (view.currentItems || []).map(x => store.get(x)).filter(x => x && mediaType(x) === 'unknown');
-  if (!unresolved.length) { toast('The displayed titles already have TMDB links.'); return; }
+  const tried = view.enrichTried ||= new Set();
+  const unresolved = (view.currentItems || []).map(x => store.get(x))
+    .filter(x => x && mediaType(x) === 'unknown' && (!quiet || !tried.has(x.key)));
+  if (!unresolved.length) { if (!quiet) toast('The displayed titles already have TMDB links.'); return; }
+  unresolved.forEach(x => tried.add(x.key));
   btn.disabled = true; btn.textContent = 'Matching...';
   let matched = 0, ambiguous = 0, failed = 0;
   await Promise.all(unresolved.map(async item => {
@@ -485,6 +496,7 @@ async function enrichVisible() {
   }));
   if (!alive(version)) return;
   paintLocal(); btn.disabled = false; btn.textContent = 'Load posters';
+  if (quiet && !failed) return;
   notice(`${matched} titles matched by exact title and year.${ambiguous ? ` ${ambiguous} need manual matching: open a title and use Find on TMDB.` : ''}${failed ? ` ${failed} could not reach the movie service; your original titles are unchanged.` : ''}`, failed > 0);
 }
 function personCard(person, role) {
